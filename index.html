@@ -299,17 +299,26 @@ footer{border-top:1px solid var(--rule);color:var(--muted);font-size:12.5px;padd
             <button id="play">Pausar</button>
             <button class="tiny" id="restart">Reiniciar</button>
             <label for="axname">eixo</label><input type="text" id="axname" value="t" spellcheck="false">
-            <label for="axmin">de</label><input type="number" id="axmin" value="0" step="any">
-            <label for="axmax">até</label><input type="number" id="axmax" value="12" step="any">
             <label for="speed">velocidade</label><input type="number" id="speed" value="1" step="0.1" min="0">
+            <label for="tau">resposta &tau;</label><input type="number" id="tau" value="2" step="0.5" min="0.05">
+            <label for="janela">janela</label><input type="number" id="janela" value="20" step="1" min="1">
             <span class="gap"></span>
             <button class="tiny" id="csv">Baixar CSV</button>
+          </div>
+          <div class="play">
+            <label>escala y</label>
+            <label><input type="checkbox" id="yauto" checked> automática</label>
+            <label for="ymin">de</label><input type="number" id="ymin" step="any" disabled>
+            <label for="ymax">até</label><input type="number" id="ymax" step="any" disabled>
+            <button class="tiny" id="yfit">Ajustar ao que está no gráfico</button>
+            <span class="gap"></span>
+            <span class="hint" style="margin:0">tracejado = regime permanente</span>
           </div>
           <div class="legend" id="legend"></div>
         </div>
         <div class="live" id="live"></div>
         <canvas id="plot"></canvas>
-        <p class="hint" id="charthint">A linha vertical é o instante atual. As caixas acima mostram o valor de cada variável nesse instante.</p>
+        <p class="hint" id="charthint">A linha cheia é a variável ao longo do tempo; a tracejada é o valor de regime que o método calcula. Mexa num parâmetro com − ou + e veja a curva sair do patamar antigo e assentar no novo. &tau; é o tempo de resposta do processo — no balanço de massa, a razão entre o volume do reator e a vazão que sai dele.</p>
       </div>
     </section>
 
@@ -654,18 +663,10 @@ let params=[
   {name:'Q33',value:120, step:10}
 ];
 /* eixo do gráfico: variável independente (tempo ou espaço) */
-const eixo={name:'t', min:0, max:12, value:0};
-function lerEixo(){
-  eixo.name=($('#axname').value||'t').trim();
-  eixo.min=+$('#axmin').value||0;
-  eixo.max=+$('#axmax').value;
-  if(!(eixo.max>eixo.min)) eixo.max=eixo.min+1;
-  if(eixo.value<eixo.min||eixo.value>eixo.max) eixo.value=eixo.min;
-  return eixo;
-}
+const eixo={name:'t', value:0};
+function lerEixo(){ eixo.name=($('#axname').value||'t').trim(); return eixo; }
 let last=null;                       // último resultado completo
 let hidden={};                       // séries ocultas no gráfico
-let sweep=null;                      // {xs, ys:[{name,vals}], falhas}
 let playing=true, ultimoQuadro=0, ultimaSolucao=0, speedTouched=false;
 let detOpen={it:true, st:false};      // mantém aberto/fechado entre redesenhos
 
@@ -826,170 +827,165 @@ function render(res,sys,vars,avisos){
   $('#solmeta').textContent=(METHODS.find(m=>m.id===method)||{}).nome;
 }
 
-/* ---- varredura e gráfico ---- */
-function computeSweep(vars,eqs,opts){
-  const ax=lerEixo();
-  const N=140, xs=[], ys=vars.map(v=>({name:v,vals:[]}));
-  let falhas=0;
-  for(let s=0;s<=N;s++){
-    const xv=ax.min+(ax.max-ax.min)*s/N;
-    xs.push(xv);
-    let sol=null;
-    try{
-      const sc=pscope(); sc[ax.name]=xv;
-      const sy=buildSystem(eqs,vars,sc);
-      sol=solveWith(method,sy.A,sy.b,opts).x;
-    }catch(e){ sol=null; falhas++; }
-    vars.forEach((v,i)=>ys[i].vals.push(sol&&isFinite(sol[i])?sol[i]:NaN));
-  }
-  sweep={xs,ys,label:ax.name,falhas};
-  if(!speedTouched) $('#speed').value=+((ax.max-ax.min)/12).toPrecision(2);
-  $('#chartmeta').textContent=falhas?falhas+' de '+(N+1)+' pontos sem solução':'solução em função de '+ax.name;
-  renderLive();
+/* ---- estado dinâmico ----
+   O SEL dá o regime permanente. O transiente vem do balanço não estacionário
+   A_ii*tau * dx_i/dt = b_i - (A x)_i, cujo ponto fixo é exatamente a solução do
+   sistema. Com tau = V_i / (vazão que sai do reator i), essa é a resposta física. */
+let modelo=null;                              /* {vars, eqs, opts} válido */
+let est={vars:[], x:null, sol:null, hist:[]}; /* trajetória exibida */
+let tempo=0;
+
+function resetEstado(vars,x0){
+  est={vars:vars.slice(), x:x0.slice(), sol:x0.slice(), hist:[]};
+  tempo=0; eixo.value=0;
+  est.hist.push({t:0,v:x0.slice(),s:x0.slice()});
 }
 
+function integrar(A,b,h){
+  const n=A.length, tau=Math.max(0.05,+$('#tau').value||1);
+  const sub=Math.max(1,Math.min(400,Math.ceil(Math.abs(h)/(tau*0.08))));
+  const hs=h/sub;
+  for(let p=0;p<sub;p++){
+    const d=new Array(n);
+    for(let i=0;i<n;i++){
+      let r=b[i];
+      for(let j=0;j<n;j++) r-=A[i][j]*est.x[j];
+      let esc=Math.abs(A[i][i]);
+      if(esc<1e-12){ esc=Math.max.apply(null,A[i].map(Math.abs))||1; }
+      d[i]=r/(esc*tau);
+    }
+    for(let i=0;i<n;i++) est.x[i]+=hs*d[i];
+  }
+  /* o relaxamento pode divergir em matrizes mal condicionadas: cai no regime */
+  for(let i=0;i<n;i++){
+    if(!isFinite(est.x[i])||Math.abs(est.x[i])>1e9){ est.x=est.sol.slice(); break; }
+  }
+}
+
+/* ---- gráfico ---- */
 function renderLegend(){
-  if(!sweep){ $('#legend').innerHTML=''; return; }
-  $('#legend').innerHTML=sweep.ys.map((s,i)=>
-    '<button class="'+(hidden[s.name]?'off':'')+'" data-s="'+esc(s.name)+'"><i style="background:'+CORES[i%CORES.length]+'"></i>'+esc(s.name)+'</button>'
+  if(!est.vars.length){ $('#legend').innerHTML=''; return; }
+  $('#legend').innerHTML=est.vars.map((v,i)=>
+    '<button class="'+(hidden[v]?'off':'')+'" data-s="'+esc(v)+'"><i style="background:'+CORES[i%CORES.length]+'"></i>'+esc(v)+'</button>'
   ).join('');
   $('#legend').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
-    const k=b.dataset.s; hidden[k]=!hidden[k]; renderLegend(); draw();
+    hidden[b.dataset.s]=!hidden[b.dataset.s]; renderLegend(); draw();
   }));
 }
 
-/* valor de cada variável no instante atual, interpolado na varredura */
-function valoresEm(x){
-  if(!sweep) return null;
-  const xs=sweep.xs, n=xs.length;
-  let k=Math.round((x-xs[0])/(xs[n-1]-xs[0])*(n-1));
-  k=Math.max(0,Math.min(n-1,k));
-  return sweep.ys.map(s=>s.vals[k]);
-}
 function renderLive(){
-  if(!sweep){ $('#live').innerHTML=''; return; }
-  const v=valoresEm(eixo.value);
-  $('#live').innerHTML='<div style="border-left-color:#9fb0c4"><b>'+esc(sweep.label)+'</b> = '+fmt(eixo.value,4)+'</div>'+
-    sweep.ys.map((s,i)=>hidden[s.name]?'':
-      '<div style="border-left-color:'+CORES[i%CORES.length]+'"><b>'+esc(s.name)+'</b> = '+fmt(v[i],5)+'</div>').join('');
+  if(!est.x){ $('#live').innerHTML=''; return; }
+  $('#live').innerHTML='<div style="border-left-color:#9fb0c4"><b>'+esc(eixo.name)+'</b> = '+fmt(tempo,4)+'</div>'+
+    est.vars.map((v,i)=>hidden[v]?'':
+      '<div style="border-left-color:'+CORES[i%CORES.length]+'"><b>'+esc(v)+'</b> = '+fmt(est.x[i],5)+
+      '<span style="color:var(--muted)"> → '+fmt(est.sol[i],5)+'</span></div>').join('');
 }
 
 const cv=$('#plot'), ctx=cv.getContext('2d');
 let hover=null;
+const MARG={L:62,R:14,T:14,B:34};
+
+function janelaX(){
+  const j=Math.max(1,+$('#janela').value||20);
+  const x1=Math.max(j,tempo), x0=x1-j;
+  return [x0,x1];
+}
+function faixaY(x0){
+  if(!$('#yauto').checked){
+    const a=+$('#ymin').value, b=+$('#ymax').value;
+    if(isFinite(a)&&isFinite(b)&&b>a) return [a,b];
+  }
+  let lo=Infinity,hi=-Infinity;
+  est.hist.forEach(p=>{ if(p.t<x0) return;
+    p.v.forEach((v,i)=>{ if(hidden[est.vars[i]]||!isFinite(v)) return; lo=Math.min(lo,v); hi=Math.max(hi,v); });
+    p.s.forEach((v,i)=>{ if(hidden[est.vars[i]]||!isFinite(v)) return; lo=Math.min(lo,v); hi=Math.max(hi,v); });
+  });
+  if(!isFinite(lo)||!isFinite(hi)){ lo=0; hi=1; }
+  if(hi-lo<1e-9){ hi=lo+Math.max(1,Math.abs(lo)*0.1); lo-=Math.max(1,Math.abs(lo)*0.1); }
+  const pad=(hi-lo)*0.1;
+  return [lo-pad,hi+pad];
+}
+function niceStep(r){
+  const e=Math.pow(10,Math.floor(Math.log10(Math.abs(r)||1))), f=r/e;
+  return (f<1.5?1:f<3?2:f<7?5:10)*e;
+}
 
 function draw(){
   const dpr=window.devicePixelRatio||1;
   const W=cv.clientWidth, H=cv.clientHeight;
   cv.width=W*dpr; cv.height=H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,W,H);
-  const L=58,R=14,T=14,B=36, w=W-L-R, h=H-T-B;
+  const {L,R,T,B}=MARG, w=W-L-R, h=H-T-B;
+  const fonte=getComputedStyle(document.body).fontFamily;
 
-  if(!sweep){
-    ctx.fillStyle='#8896a5'; ctx.font='13px '+getComputedStyle(document.body).fontFamily;
-    ctx.textAlign='center'; ctx.fillText('Marque um parâmetro na coluna x para gerar a curva.',W/2,H/2);
+  if(!est.x||!est.hist.length){
+    ctx.fillStyle='#8896a5'; ctx.font='13px '+fonte; ctx.textAlign='center';
+    ctx.fillText('Corrija as equações para gerar a curva.',W/2,H/2);
     return;
   }
-  const vis=sweep.ys.filter(s=>!hidden[s.name]);
-  let lo=Infinity,hi=-Infinity;
-  vis.forEach(s=>s.vals.forEach(v=>{ if(isFinite(v)){ lo=Math.min(lo,v); hi=Math.max(hi,v);} }));
-  if(!isFinite(lo)||!isFinite(hi)){ lo=0; hi=1; }
-  if(hi-lo<1e-9){ hi=lo+1; lo-=1; }
-  const pad=(hi-lo)*0.08; lo-=pad; hi+=pad;
-  const x0=sweep.xs[0], x1=sweep.xs[sweep.xs.length-1];
-  const px=v=>L+(v-x0)/(x1-x0)*w;
-  const py=v=>T+h-(v-lo)/(hi-lo)*h;
+  const [x0,x1]=janelaX(), [lo,hi]=faixaY(x0);
+  const px=v=>L+(v-x0)/(x1-x0)*w, py=v=>T+h-(v-lo)/(hi-lo)*h;
 
-  /* grade */
-  ctx.strokeStyle='#e6ebf1'; ctx.lineWidth=1; ctx.fillStyle='#7b8794';
-  ctx.font='11px '+getComputedStyle(document.body).fontFamily;
+  ctx.strokeStyle='#e6ebf1'; ctx.lineWidth=1; ctx.fillStyle='#7b8794'; ctx.font='11px '+fonte;
   const ticks=(a,b,n)=>{ const st=niceStep((b-a)/n), out=[]; for(let v=Math.ceil(a/st)*st; v<=b+1e-9; v+=st) out.push(v); return out; };
   ctx.textAlign='right'; ctx.textBaseline='middle';
   ticks(lo,hi,5).forEach(v=>{ const y=py(v);
-    ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(L+w,y); ctx.stroke();
-    ctx.fillText(fmt(v,3),L-7,y);
-  });
+    ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(L+w,y); ctx.stroke(); ctx.fillText(fmt(v,4),L-7,y); });
   ctx.textAlign='center'; ctx.textBaseline='top';
   ticks(x0,x1,6).forEach(v=>{ const x=px(v);
-    ctx.beginPath(); ctx.moveTo(x,T); ctx.lineTo(x,T+h); ctx.stroke();
-    ctx.fillText(fmt(v,3),x,T+h+7);
-  });
-  /* eixos */
+    ctx.beginPath(); ctx.moveTo(x,T); ctx.lineTo(x,T+h); ctx.stroke(); ctx.fillText(fmt(v,3),x,T+h+7); });
   ctx.strokeStyle='#aab6c2';
   ctx.beginPath(); ctx.moveTo(L,T); ctx.lineTo(L,T+h); ctx.lineTo(L+w,T+h); ctx.stroke();
   if(lo<0&&hi>0){ ctx.strokeStyle='#c3ccd6'; ctx.beginPath(); ctx.moveTo(L,py(0)); ctx.lineTo(L+w,py(0)); ctx.stroke(); }
   ctx.fillStyle='#5d6b7b'; ctx.textAlign='right'; ctx.textBaseline='bottom';
-  ctx.fillText(sweep.label,L+w,H-2);
+  ctx.fillText(eixo.name,L+w,H-2);
 
-  /* curvas */
-  ctx.lineWidth=2; ctx.lineJoin='round';
-  sweep.ys.forEach((s,i)=>{
-    if(hidden[s.name]) return;
-    ctx.strokeStyle=CORES[i%CORES.length];
+  const pts=est.hist.filter(p=>p.t>=x0-1e-9);
+  ctx.lineJoin='round';
+  est.vars.forEach((nome,i)=>{
+    if(hidden[nome]) return;
+    const cor=CORES[i%CORES.length];
+    /* regime permanente */
+    ctx.save(); ctx.setLineDash([5,4]); ctx.lineWidth=1.2; ctx.strokeStyle=cor; ctx.globalAlpha=.55;
     ctx.beginPath(); let pen=false;
-    s.vals.forEach((v,k)=>{
-      if(!isFinite(v)){ pen=false; return; }
-      const X=px(sweep.xs[k]), Y=py(v);
-      if(!pen){ ctx.moveTo(X,Y); pen=true; } else ctx.lineTo(X,Y);
-    });
+    pts.forEach(p=>{ const v=p.s[i]; if(!isFinite(v)){pen=false;return;}
+      const X=px(p.t),Y=py(v); pen?ctx.lineTo(X,Y):(ctx.moveTo(X,Y),pen=true); });
+    ctx.stroke(); ctx.restore();
+    /* trajetória */
+    ctx.lineWidth=2; ctx.strokeStyle=cor;
+    ctx.beginPath(); pen=false;
+    pts.forEach(p=>{ const v=p.v[i]; if(!isFinite(v)){pen=false;return;}
+      const X=px(p.t),Y=py(v); pen?ctx.lineTo(X,Y):(ctx.moveTo(X,Y),pen=true); });
     ctx.stroke();
+    /* ponto atual */
+    if(isFinite(est.x[i])&&tempo>=x0){
+      ctx.fillStyle=cor; ctx.beginPath(); ctx.arc(px(tempo),py(est.x[i]),4,0,6.284); ctx.fill();
+      ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke();
+    }
   });
 
-  /* instante atual */
-  if(eixo.value>=x0&&eixo.value<=x1){
-    const X=px(eixo.value);
-    ctx.strokeStyle='#7d8b9a'; ctx.lineWidth=1.5;
-    ctx.beginPath(); ctx.moveTo(X,T); ctx.lineTo(X,T+h); ctx.stroke();
-    const v=valoresEm(eixo.value);
-    sweep.ys.forEach((s,i)=>{
-      if(hidden[s.name]||!isFinite(v[i])) return;
-      ctx.fillStyle=CORES[i%CORES.length];
-      ctx.beginPath(); ctx.arc(X,py(v[i]),4.5,0,6.284); ctx.fill();
-      ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke();
-    });
-  }
-
-  /* leitura */
-  if(hover!==null){
-    const k=Math.max(0,Math.min(sweep.xs.length-1,hover));
-    const X=px(sweep.xs[k]);
+  if(hover!==null&&pts.length){
+    const alvo=x0+(hover-L)/w*(x1-x0);
+    let p=pts[0];
+    pts.forEach(q=>{ if(Math.abs(q.t-alvo)<Math.abs(p.t-alvo)) p=q; });
+    const X=px(p.t);
     ctx.strokeStyle='#16202c'; ctx.lineWidth=1;
     ctx.beginPath(); ctx.moveTo(X,T); ctx.lineTo(X,T+h); ctx.stroke();
-    const linhas=[sweep.label+' = '+fmt(sweep.xs[k],4)];
-    sweep.ys.forEach((s,i)=>{ if(!hidden[s.name]) linhas.push(s.name+' = '+fmt(s.vals[k],4)); });
-    ctx.font='12px '+getComputedStyle(document.body).fontFamily;
-    const bw=Math.max.apply(null,linhas.map(t=>ctx.measureText(t).width))+16;
-    const bh=linhas.length*16+10;
+    const linhas=[eixo.name+' = '+fmt(p.t,4)].concat(
+      est.vars.map((n2,i)=>hidden[n2]?null:n2+' = '+fmt(p.v[i],4)).filter(Boolean));
+    ctx.font='12px '+fonte;
+    const bw=Math.max.apply(null,linhas.map(t=>ctx.measureText(t).width))+16, bh=linhas.length*16+10;
     let bx=X+10; if(bx+bw>L+w) bx=X-10-bw;
-    let by=T+8;
     ctx.fillStyle='rgba(255,255,255,.96)'; ctx.strokeStyle='#ccd5de';
-    ctx.beginPath(); ctx.rect(bx,by,bw,bh); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.rect(bx,T+8,bw,bh); ctx.fill(); ctx.stroke();
     ctx.textAlign='left'; ctx.textBaseline='top';
-    linhas.forEach((t,i)=>{
-      ctx.fillStyle=i===0?'#5d6b7b':CORES[(i-1)%CORES.length];
-      ctx.fillText(t,bx+8,by+6+i*16);
-    });
-    sweep.ys.forEach((s,i)=>{
-      if(hidden[s.name]||!isFinite(s.vals[k])) return;
-      ctx.fillStyle=CORES[i%CORES.length];
-      ctx.beginPath(); ctx.arc(X,py(s.vals[k]),3,0,6.284); ctx.fill();
-    });
+    let k=0;
+    linhas.forEach((t,idx)=>{ ctx.fillStyle=idx===0?'#5d6b7b':CORES[(k++)%CORES.length]; ctx.fillText(t,bx+8,T+14+idx*16); });
   }
 }
-function niceStep(r){
-  const e=Math.pow(10,Math.floor(Math.log10(Math.abs(r)||1))), f=r/e;
-  return (f<1.5?1:f<3?2:f<7?5:10)*e;
-}
-function pos(ev){
-  const r=cv.getBoundingClientRect();
-  const cx=(ev.touches?ev.touches[0].clientX:ev.clientX)-r.left;
-  if(!sweep) return null;
-  const L=58,R=14,w=cv.clientWidth-L-R;
-  return Math.round((cx-L)/w*(sweep.xs.length-1));
-}
-cv.addEventListener('mousemove',e=>{hover=pos(e);draw();});
+cv.addEventListener('mousemove',e=>{hover=e.clientX-cv.getBoundingClientRect().left;draw();});
 cv.addEventListener('mouseleave',()=>{hover=null;draw();});
-cv.addEventListener('touchstart',e=>{hover=pos(e);draw();},{passive:true});
-cv.addEventListener('touchmove',e=>{hover=pos(e);draw();},{passive:true});
+cv.addEventListener('touchmove',e=>{hover=e.touches[0].clientX-cv.getBoundingClientRect().left;draw();},{passive:true});
 window.addEventListener('resize',draw);
 
 /* ---- execução ---- */
@@ -997,16 +993,19 @@ function run(){
   try{
     const {vars,eqs,opts}=readInput();
     $('#eqcount').textContent=vars.length+' × '+vars.length;
+    lerEixo();
     const sys=buildSystem(eqs,vars,pscope());
     const res=solveWith(method,sys.A,sys.b,opts);
-    last={vars,sys,res};
+    modelo={vars,eqs,opts};
     render(res,sys,vars,sys.avisos);
-    computeSweep(vars,eqs,opts);
-    renderLegend(); draw();
+    if(!est.x||est.vars.join(',')!==vars.join(',')) resetEstado(vars,res.x);
+    est.sol=res.x.slice();
+    if(est.hist.length) est.hist[est.hist.length-1].s=res.x.slice();
+    $('#chartmeta').textContent='resposta no tempo · '+(playing?'rodando':'pausado');
+    renderLegend(); renderLive(); draw();
   }catch(e){
     $('#out').innerHTML='<div class="msg err">'+esc(e.message)+'</div>';
-    $('#solmeta').textContent='';
-    sweep=null; renderLegend(); draw();
+    $('#solmeta').textContent=''; modelo=null; draw();
   }
 }
 
@@ -1031,40 +1030,65 @@ function detect(){
 function quadro(ts){
   requestAnimationFrame(quadro);
   const dt=Math.min(0.1,(ts-ultimoQuadro)/1000||0); ultimoQuadro=ts;
-  if(!playing||!sweep) return;
-  const vel=+$('#speed').value||0;
-  eixo.value+=vel*dt;
-  if(eixo.value>eixo.max||eixo.value<eixo.min) eixo.value=eixo.min;
+  if(!playing||!modelo) return;
+  const h=(+$('#speed').value||0)*dt;
+  if(h<=0) return;
+  tempo+=h; eixo.value=tempo;
+  try{
+    const sys=buildSystem(modelo.eqs,modelo.vars,pscope());
+    est.sol=solveWith(method,sys.A,sys.b,modelo.opts).x;
+    integrar(sys.A,sys.b,h);
+  }catch(e){ return; }
+  est.hist.push({t:tempo,v:est.x.slice(),s:est.sol.slice()});
+  const corte=tempo-Math.max(1,+$('#janela').value||20)*1.2;
+  while(est.hist.length>2&&est.hist[0].t<corte) est.hist.shift();
   renderLive(); draw();
   if(ts-ultimaSolucao>500){ ultimaSolucao=ts; atualizarSolucao(); }
 }
-/* recalcula só o painel de solução, sem refazer a varredura */
+/* recalcula só o painel de solução, sem tocar na trajetória */
 function atualizarSolucao(){
+  if(!modelo) return;
   try{
-    const {vars,eqs,opts}=readInput();
-    const sys=buildSystem(eqs,vars,pscope());
-    render(solveWith(method,sys.A,sys.b,opts),sys,vars,sys.avisos);
-  }catch(e){/* o erro já aparece no próximo run() */}
+    const sys=buildSystem(modelo.eqs,modelo.vars,pscope());
+    render(solveWith(method,sys.A,sys.b,modelo.opts),sys,modelo.vars,sys.avisos);
+  }catch(e){}
 }
 function setPlay(v){
   playing=v;
   $('#play').textContent=v?'Pausar':'Rodar';
   $('#play').classList.toggle('primary',!v);
+  $('#chartmeta').textContent='resposta no tempo · '+(v?'rodando':'pausado');
 }
 $('#play').addEventListener('click',()=>setPlay(!playing));
-$('#speed').addEventListener('input',()=>{speedTouched=true;});
-$('#restart').addEventListener('click',()=>{ eixo.value=eixo.min; run(); });
-['axname','axmin','axmax'].forEach(id=>$('#'+id).addEventListener('change',()=>{ lerEixo(); renderPad(); run(); }));
+$('#restart').addEventListener('click',()=>{ if(modelo) resetEstado(modelo.vars,est.sol); renderLive(); draw(); });
+$('#axname').addEventListener('change',()=>{ lerEixo(); renderPad(); run(); });
+$('#janela').addEventListener('input',draw);
+$('#yauto').addEventListener('change',e=>{
+  $('#ymin').disabled=$('#ymax').disabled=e.target.checked; draw();
+});
+['ymin','ymax'].forEach(id=>$('#'+id).addEventListener('input',()=>{
+  if($('#yauto').checked){ $('#yauto').checked=false; $('#ymin').disabled=$('#ymax').disabled=false; }
+  draw();
+}));
+$('#yfit').addEventListener('click',()=>{
+  const [x0]=janelaX();
+  $('#yauto').checked=true;                 /* mede a faixa automática... */
+  const [a,b]=faixaY(x0);
+  $('#yauto').checked=false;                /* ...e congela nela */
+  $('#ymin').disabled=$('#ymax').disabled=false;
+  $('#ymin').value=+a.toPrecision(4); $('#ymax').value=+b.toPrecision(4);
+  draw();
+});
 requestAnimationFrame(quadro);
 
 /* ---- CSV ---- */
 $('#csv').addEventListener('click',()=>{
-  if(!sweep){ alert('Não há curva para exportar: corrija as equações primeiro.'); return; }
-  let csv=sweep.label+','+sweep.ys.map(s=>s.name).join(',')+'\n';
-  sweep.xs.forEach((x,k)=>{ csv+=x+','+sweep.ys.map(s=>isFinite(s.vals[k])?s.vals[k]:'').join(',')+'\n'; });
+  if(!est.hist.length){ alert('Não há curva para exportar: corrija as equações primeiro.'); return; }
+  let csv=eixo.name+','+est.vars.map(v=>v).join(',')+','+est.vars.map(v=>v+'_regime').join(',')+'\n';
+  est.hist.forEach(p=>{ csv+=p.t+','+p.v.join(',')+','+p.s.join(',')+'\n'; });
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
-  a.download='varredura_'+sweep.label+'.csv'; a.click(); URL.revokeObjectURL(a.href);
+  a.download='resposta_'+eixo.name+'.csv'; a.click(); URL.revokeObjectURL(a.href);
 });
 
 /* ---- ligações ---- */
