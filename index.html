@@ -57,6 +57,16 @@ h1 em{font-style:normal;display:block;color:var(--blue-dark)}
 .head-note{max-width:44ch;color:var(--muted);margin:0;font-size:14px}
 .head-note code{font-family:var(--mono);font-size:12.5px;background:#fff;border:1px solid var(--rule);padding:1px 4px;border-radius:3px}
 
+/* navegação entre as páginas do site */
+.nav{display:flex;gap:2px;padding-top:14px;flex-wrap:wrap}
+.nav a{
+  font-size:13.5px;text-decoration:none;color:var(--muted);
+  padding:6px 12px;border:1px solid var(--rule);border-bottom:0;
+  border-radius:4px 4px 0 0;background:#eef1f5;
+}
+.nav a:hover{background:#fff;color:var(--ink)}
+.nav a[aria-current]{background:#fff;color:var(--ink);font-weight:600;box-shadow:inset 0 2px 0 var(--blue)}
+
 /* ---------- layout ---------- */
 main{padding:26px 0 70px}
 .cols{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:22px;align-items:start}
@@ -197,9 +207,15 @@ footer{border-top:1px solid var(--rule);color:var(--muted);font-size:12.5px;padd
 <body>
 
 <header>
-  <div class="wrap head-in">
+  <div class="wrap">
+    <div class="head-in">
     <h1>Sistemas de equações lineares<em>diretos e iterativos</em></h1>
     <p class="head-note">Declare as variáveis e os parâmetros, escreva as equações e resolva pelo método escolhido, com o passo a passo à vista. Se algum coeficiente depender de <code>t</code>, o gráfico percorre o tempo e mostra as variáveis respondendo; mexer num parâmetro redesenha as curvas na hora.</p>
+    </div>
+    <nav class="nav">
+      <a href="index.html" aria-current="page">Sistemas lineares</a>
+      <a href="nao-lineares.html">Equações não-lineares</a>
+    </nav>
   </div>
 </header>
 

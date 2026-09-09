@@ -1,0 +1,1395 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Equações não-lineares — bissecção, regula falsi, Newton-Raphson e secante</title>
+<style>
+:root{
+  --paper:#eef1f5;
+  --panel:#ffffff;
+  --ink:#16202c;
+  --muted:#5d6b7b;
+  --rule:#ccd5de;
+  --rule-soft:#e3e9ef;
+  --blue:#2f5fd0;
+  --blue-dark:#1f3f92;
+  --amber:#c07600;
+  --green:#0f766e;
+  --purple:#8b2fa0;
+  --red:#b02a1e;
+  --grid:#dde4eb;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  --sans: ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:15px;
+  line-height:1.5;
+  -webkit-text-size-adjust:100%;
+}
+a{color:var(--blue-dark)}
+
+/* ---------- cabeçalho ---------- */
+header{
+  border-bottom:1px solid var(--rule);
+  background:
+    linear-gradient(var(--grid) 1px, transparent 1px) 0 0/28px 28px,
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0/28px 28px,
+    #f7f9fb;
+}
+.wrap{max-width:1220px;margin:0 auto;padding:0 20px}
+.head-in{padding:34px 0 28px;display:flex;flex-wrap:wrap;gap:24px;align-items:flex-end;justify-content:space-between}
+h1{
+  font-family:var(--serif);
+  font-weight:600;
+  font-size:clamp(28px,4.4vw,44px);
+  line-height:1.08;
+  margin:0;
+  letter-spacing:-.01em;
+  max-width:16ch;
+}
+h1 em{font-style:normal;display:block;color:var(--blue-dark)}
+.head-note{max-width:44ch;color:var(--muted);margin:0;font-size:14px}
+.head-note code{font-family:var(--mono);font-size:12.5px;background:#fff;border:1px solid var(--rule);padding:1px 4px;border-radius:3px}
+
+/* navegação entre as páginas do site */
+.nav{display:flex;gap:2px;padding-top:14px;flex-wrap:wrap}
+.nav a{
+  font-size:13.5px;text-decoration:none;color:var(--muted);
+  padding:6px 12px;border:1px solid var(--rule);border-bottom:0;
+  border-radius:4px 4px 0 0;background:#eef1f5;
+}
+.nav a:hover{background:#fff;color:var(--ink)}
+.nav a[aria-current]{background:#fff;color:var(--ink);font-weight:600;box-shadow:inset 0 2px 0 var(--blue)}
+
+/* ---------- layout ---------- */
+main{padding:26px 0 70px}
+.cols{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:22px;align-items:start}
+@media (max-width:960px){.cols{grid-template-columns:minmax(0,1fr)}}
+
+.card{background:var(--panel);border:1px solid var(--rule);border-radius:6px;margin-bottom:18px}
+.card > h2{
+  font-family:var(--serif);font-size:17px;font-weight:600;margin:0;
+  padding:13px 16px;border-bottom:1px solid var(--rule-soft);
+  display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+}
+.card > h2 span{font-family:var(--sans);font-size:12.5px;font-weight:400;color:var(--muted)}
+.card .body{padding:16px}
+
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px}
+input[type=text],input[type=number],textarea,select{
+  width:100%;font-family:var(--mono);font-size:13.5px;color:var(--ink);
+  background:#fbfcfd;border:1px solid var(--rule);border-radius:4px;padding:8px 9px;
+}
+select{font-family:var(--sans);font-size:14px}
+textarea{line-height:1.65;resize:vertical}
+input:focus,textarea:focus,select:focus,button:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+.field{margin-bottom:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row > *{flex:1 1 120px;min-width:0}
+
+button{
+  font-family:var(--sans);font-size:14px;cursor:pointer;
+  border:1px solid var(--rule);background:#fff;color:var(--ink);
+  border-radius:4px;padding:8px 13px;
+}
+button:hover{background:#f2f5f9}
+.primary{background:var(--blue);border-color:var(--blue-dark);color:#fff;font-weight:600;padding:10px 18px}
+.primary:hover{background:var(--blue-dark)}
+.tiny{font-size:12.5px;padding:5px 9px}
+
+/* método */
+.methods{display:grid;gap:6px}
+.methods label{
+  display:flex;gap:9px;align-items:flex-start;margin:0;color:var(--ink);font-size:14px;
+  border:1px solid var(--rule);border-radius:4px;padding:9px 11px;cursor:pointer;background:#fbfcfd;
+}
+.methods label:hover{background:#f2f5f9}
+.methods input{margin:3px 0 0}
+.methods label.on{border-color:var(--blue);background:#eef3fd;box-shadow:inset 3px 0 0 var(--blue)}
+.methods small{display:block;color:var(--muted);font-size:12.5px;line-height:1.35}
+.methods .fx{font-family:var(--mono);font-size:12px;color:var(--blue-dark);display:block;margin-top:3px}
+
+/* parâmetros */
+table.params{width:100%;border-collapse:collapse;font-size:13px}
+table.params th{text-align:left;font-weight:600;color:var(--muted);font-size:12px;padding:0 6px 6px 0}
+table.params td{padding:3px 6px 3px 0;vertical-align:middle}
+table.params input[type=text],table.params input[type=number]{padding:5px 6px;font-size:13px}
+table.params td.nm input{font-weight:600}
+.stepbtns{white-space:nowrap;width:74px}
+.stepbtns button{font-family:var(--mono);font-size:14px;line-height:1;padding:4px 9px;min-width:30px}
+.stepbtns button:active{background:#e6ecf4}
+table.params td.stp input{width:72px}
+
+/* mensagens */
+.msg{border-radius:4px;padding:10px 12px;font-size:13.5px;margin-bottom:12px;border:1px solid}
+.msg.err{background:#fdf1ef;border-color:#e8bdb6;color:var(--red)}
+.msg.warn{background:#fdf7e8;border-color:#e6d3a3;color:#7a5300}
+.msg.ok{background:#eef7f4;border-color:#b7dbd2;color:var(--green)}
+.msg code{font-family:var(--mono);font-size:12.5px}
+
+/* solução */
+.sol{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+.sol div{border:1px solid var(--rule);border-left:3px solid var(--blue);border-radius:3px;padding:7px 12px;background:#fbfcfd}
+.sol b{font-family:var(--mono);font-weight:600;font-size:13px;color:var(--blue-dark)}
+.sol span{display:block;font-family:var(--mono);font-size:15px}
+
+/* tabelas */
+table.it{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12.5px}
+table.it th{background:#f4f7fa;color:var(--muted);font-weight:600;text-align:right;padding:5px 8px;border-bottom:1px solid var(--rule);position:sticky;top:0}
+table.it td{text-align:right;padding:4px 8px;border-bottom:1px solid var(--rule-soft)}
+table.it td:first-child,table.it th:first-child{text-align:left}
+table.it tbody tr:last-child td{background:#eef3fd;font-weight:600}
+table.it tbody tr.sel td{background:#fdf7e8}
+table.it tbody tr{cursor:pointer}
+.scroll{max-height:330px;overflow:auto;border:1px solid var(--rule-soft);border-radius:4px}
+
+table.cmp{width:100%;border-collapse:collapse;font-size:13px}
+table.cmp th{text-align:left;font-weight:600;color:var(--muted);font-size:12px;padding:0 8px 6px 0;border-bottom:1px solid var(--rule)}
+table.cmp td{padding:5px 8px 5px 0;border-bottom:1px solid var(--rule-soft);font-family:var(--mono);font-size:12.5px}
+table.cmp td:first-child{font-family:var(--sans);font-size:13px}
+table.cmp i{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:7px}
+
+details{border-top:1px solid var(--rule-soft);padding:10px 0 0}
+details summary{cursor:pointer;font-size:13.5px;color:var(--blue-dark);font-weight:600}
+details[open] summary{margin-bottom:8px}
+pre.algo{font-family:var(--mono);font-size:12px;line-height:1.55;background:#f7f9fb;border:1px solid var(--rule);
+  border-radius:4px;padding:11px 13px;overflow-x:auto;margin:0 0 12px}
+pre.algo b{color:var(--blue-dark)}
+
+/* teclado de equações */
+.pad{border:1px solid var(--rule);border-radius:4px;background:#f7f9fb;padding:8px;margin-bottom:10px}
+.pad-row{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-bottom:5px}
+.pad-row:last-child{margin-bottom:0}
+.pad-tag{font-size:11.5px;color:var(--muted);width:74px;flex:0 0 74px}
+.pad button{font-family:var(--mono);font-size:12.5px;padding:4px 8px;border-radius:3px;line-height:1.2}
+.pad button.v{border-color:#b9c9e8;background:#eef3fd;color:var(--blue-dark);font-weight:600}
+.pad button.p{border-color:#e2cfa6;background:#fdf7e8;color:#7a5300;font-weight:600}
+.pad button.op{min-width:30px}
+.pad .empty{font-size:12px;color:var(--muted);font-style:italic}
+
+/* barra de controles do gráfico */
+.play{display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%;
+  border:1px solid var(--rule);border-radius:4px;background:#f7f9fb;padding:8px 10px;margin-bottom:10px}
+.play input[type=number]{width:82px;padding:5px 6px;font-size:12.5px}
+.play label{margin:0;font-size:12.5px;white-space:nowrap;color:var(--muted)}
+.play .gap{flex:1 1 auto}
+.play input[type=range]{flex:1 1 160px;accent-color:var(--blue);width:auto}
+
+.live{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.live div{font-family:var(--mono);font-size:12.5px;border:1px solid var(--rule);border-left:3px solid var(--blue);
+  border-radius:3px;padding:4px 9px;background:#fbfcfd}
+.live b{font-weight:500;color:var(--muted)}
+
+/* gráfico */
+.chart-head{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;margin-bottom:8px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px}
+.legend button{border:0;background:none;padding:2px 0;display:flex;gap:6px;align-items:center;font-family:var(--mono);font-size:12.5px;cursor:pointer}
+.legend i{width:16px;height:3px;border-radius:2px;display:inline-block}
+.legend button.off{opacity:.35}
+#plotf{width:100%;height:360px;display:block;touch-action:none}
+#plotc{width:100%;height:300px;display:block}
+.hint{font-size:12.5px;color:var(--muted);margin:8px 0 0}
+
+.help dt{font-family:var(--mono);font-size:12.5px;color:var(--blue-dark);margin-top:8px}
+.help dd{margin:2px 0 0;font-size:13px;color:var(--muted)}
+.help p{font-size:13px;color:var(--muted)}
+.help table.cmp td:first-child{white-space:nowrap}
+footer{border-top:1px solid var(--rule);color:var(--muted);font-size:12.5px;padding:16px 0 26px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="head-in">
+      <h1>Equações não-lineares<em>confinamento e métodos abertos</em></h1>
+      <p class="head-note">Escreva <code>f(x)</code>, escolha o método e acompanhe cada iteração na tabela e no gráfico. Os quatro métodos resolvem o mesmo problema — <code>f(x) = 0</code> — mas gastam números muito diferentes de iterações; a aba de comparação mostra isso lado a lado.</p>
+    </div>
+    <nav class="nav">
+      <a href="index.html">Sistemas lineares</a>
+      <a href="nao-lineares.html" aria-current="page">Equações não-lineares</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+<div class="cols">
+
+  <!-- ================= COLUNA ESQUERDA ================= -->
+  <div>
+    <section class="card">
+      <h2>1. Método</h2>
+      <div class="body">
+        <div class="methods" id="methods"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>2. Função <span id="fxmeta">f(x) = 0</span></h2>
+      <div class="body">
+        <div class="field">
+          <label for="preset">Exemplos das aulas</label>
+          <select id="preset">
+            <option value="">— escolher um exemplo —</option>
+            <option value="0">Área do segmento circular: 8 − 4,5(x − sen x), [2; 3]</option>
+            <option value="1">Chapra: e^−x − x, x₀ = 0</option>
+            <option value="2">Convergência lenta da regula falsi: x¹⁰ − 1, [0; 1,3]</option>
+            <option value="3">Fator de compressibilidade (SRK): três raízes reais, [0,4; 1]</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="varname">Nome da incógnita</label>
+          <input type="text" id="varname" value="x" spellcheck="false">
+        </div>
+        <div class="field" style="margin-bottom:8px">
+          <label>Clique nos símbolos ou digite — o texto entra onde está o cursor</label>
+          <div class="pad" id="pad"></div>
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label for="fx">Expressão igualada a zero. Um sinal de igual é aceito: <code>8 = 4.5*(x - sin(x))</code></label>
+          <textarea id="fx" rows="2" spellcheck="false">8 - 4.5*(x - sin(x))</textarea>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>3. Parâmetros <span>valores fixos do processo</span></h2>
+      <div class="body">
+        <table class="params">
+          <thead><tr><th>Nome</th><th>Valor</th><th>Ajuste</th><th>Passo</th><th></th></tr></thead>
+          <tbody id="params"></tbody>
+        </table>
+        <div class="row" style="margin-top:10px">
+          <button class="tiny" id="addparam">Adicionar parâmetro</button>
+          <button class="tiny" id="detect">Detectar na função</button>
+        </div>
+        <p class="hint">Use − e + para variar um parâmetro e ver a raiz se deslocar no gráfico.</p>
+      </div>
+    </section>
+
+    <section class="card" id="startcard">
+      <h2>4. Ponto de partida <span id="startmeta"></span></h2>
+      <div class="body">
+        <div id="brk">
+          <div class="row field">
+            <div><label for="a">Extremo inferior <i>a</i></label><input type="number" id="a" value="2" step="any"></div>
+            <div><label for="b">Extremo superior <i>b</i></label><input type="number" id="b" value="3" step="any"></div>
+          </div>
+          <p class="hint" id="bolzano" style="margin:0 0 10px"></p>
+        </div>
+        <div id="open">
+          <div class="row field">
+            <div><label for="x0">Chute inicial <i id="lb0">x₀</i></label><input type="number" id="x0" value="2" step="any"></div>
+            <div id="x1wrap"><label for="x1">Segundo chute <i>x₁</i></label><input type="number" id="x1" value="3" step="any"></div>
+          </div>
+        </div>
+        <div class="row">
+          <button class="tiny" id="scan">Procurar mudanças de sinal</button>
+          <button class="tiny" id="usebrk">Usar [a, b] como chutes</button>
+        </div>
+        <div id="scanout"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>5. Critério de parada</h2>
+      <div class="body">
+        <div class="row field">
+          <div>
+            <label for="tolx">Tolerância ε em <i>x</i></label>
+            <input type="number" id="tolx" value="0.001" step="any" min="0">
+          </div>
+          <div>
+            <label for="tolf">Tolerância em |f(x)|</label>
+            <input type="number" id="tolf" value="1e-10" step="any" min="0">
+          </div>
+          <div>
+            <label for="maxit">Máx. de iterações</label>
+            <input type="number" id="maxit" value="60" min="1" step="1">
+          </div>
+        </div>
+        <p class="hint" style="margin:0">Na bissecção, ε é comparado com (b − a)/2; nos demais, com |x<sub>i+1</sub> − x<sub>i</sub>|. Qualquer um dos dois critérios encerra o laço, como nos pseudocódigos da aula.</p>
+      </div>
+    </section>
+
+    <section class="card" id="dercard">
+      <h2>6. Derivada <span>só para Newton-Raphson</span></h2>
+      <div class="body">
+        <div class="field" style="margin-bottom:8px">
+          <label for="dfx">f′(x) — deixe vazio para usar diferença centrada</label>
+          <input type="text" id="dfx" placeholder="-exp(-x) - 1" spellcheck="false">
+        </div>
+        <p class="hint" style="margin:0">Sem expressão, f′ é estimada por (f(x+h) − f(x−h))/2h com h = 10⁻⁶·máx(1, |x|). Funciona bem, mas trava a precisão da raiz por volta de 10⁻¹¹ — para o erro chegar ao limite da máquina, escreva a derivada.</p>
+      </div>
+    </section>
+
+    <button class="primary" id="solve" style="width:100%">Resolver</button>
+  </div>
+
+  <!-- ================= COLUNA DIREITA ================= -->
+  <div>
+    <section class="card">
+      <h2>Raiz <span id="solmeta"></span></h2>
+      <div class="body" id="out">
+        <p class="hint" style="margin:0">Clique em <b>Resolver</b> para rodar o método.</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>A função e as iterações <span id="fmeta"></span></h2>
+      <div class="body">
+        <div class="play">
+          <label for="kslider">iteração</label>
+          <input type="range" id="kslider" min="0" max="0" value="0" step="1">
+          <span class="hint" id="klabel" style="margin:0;min-width:70px"></span>
+          <span class="gap"></span>
+          <label><input type="checkbox" id="showgeo" checked> desenhar a construção</label>
+        </div>
+        <div class="play">
+          <label>janela em x</label>
+          <label><input type="checkbox" id="xauto" checked> automática</label>
+          <label for="xmin">de</label><input type="number" id="xmin" step="any" disabled>
+          <label for="xmax">até</label><input type="number" id="xmax" step="any" disabled>
+          <span class="gap"></span>
+          <button class="tiny" id="csv">Baixar CSV</button>
+        </div>
+        <div class="live" id="live"></div>
+        <canvas id="plotf"></canvas>
+        <p class="hint" id="fhint">A linha grossa é f(x); o ponto cheio é a estimativa da iteração selecionada. Arraste o controle acima ou clique numa linha da tabela para percorrer as iterações.</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Convergência <span id="cmeta">erro a cada iteração</span></h2>
+      <div class="body">
+        <div class="play">
+          <label><input type="checkbox" id="cmpon"> comparar os quatro métodos</label>
+          <span class="gap"></span>
+          <label for="erro">erro no eixo y</label>
+          <select id="erro" style="width:auto;font-size:12.5px;padding:5px 6px">
+            <option value="et">ε_t — relativo verdadeiro (%)</option>
+            <option value="ea">ε_a — relativo aproximado (%)</option>
+          </select>
+        </div>
+        <div class="legend" id="legend"></div>
+        <canvas id="plotc"></canvas>
+        <div id="cmpout"></div>
+        <p class="hint">Escala logarítmica: cada linha horizontal vale um fator de 10. Uma reta descendente significa erro caindo por um fator constante a cada iteração — quanto mais íngreme, mais rápido o método.</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Os quatro métodos</h2>
+      <div class="body help">
+        <table class="cmp">
+          <thead><tr><th>Método</th><th>Precisa de</th><th>Converge sempre?</th><th>Ordem</th></tr></thead>
+          <tbody>
+            <tr><td><i style="background:var(--blue)"></i>Bissecção</td><td>[a, b] com f(a)·f(b) &lt; 0</td><td>sim, se houver raiz no intervalo</td><td>1 (fator ½ por iteração)</td></tr>
+            <tr><td><i style="background:var(--amber)"></i>Regula falsi</td><td>[a, b] com f(a)·f(b) &lt; 0</td><td>sim</td><td>1, quase sempre melhor que a bissecção</td></tr>
+            <tr><td><i style="background:var(--green)"></i>Newton-Raphson</td><td>x₀ e f′(x)</td><td>não</td><td>2</td></tr>
+            <tr><td><i style="background:var(--purple)"></i>Secante</td><td>x₋₁ e x₀, sem derivada</td><td>não</td><td>≈ 1,618</td></tr>
+          </tbody>
+        </table>
+        <p>Os dois primeiros são <b>métodos de confinamento</b>: mantêm a raiz presa entre dois extremos, então nunca escapam, mas a bissecção ignora completamente o valor de f. Os dois últimos são <b>métodos abertos</b>: partem de um ou dois pontos que não precisam cercar a raiz e podem divergir, em troca de convergirem muito mais rápido quando funcionam.</p>
+        <p>A regula falsi fica lenta quando a função é bem curva perto da raiz — um dos extremos trava e o intervalo nunca encolhe. O exemplo <code>x¹⁰ − 1</code> na lista de presets mostra o caso: depois de cinco iterações a bissecção já está em 1,6 % de erro e a regula falsi ainda está em 59 %.</p>
+        <details>
+          <summary>Pseudocódigos</summary>
+          <pre class="algo" id="algo"></pre>
+        </details>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Como escrever a função</h2>
+      <div class="body help">
+        <p>Ponto como separador decimal. Multiplicação explícita é mais segura (<code>3*x</code>), mas <code>3x</code> também funciona. Constantes: <code>pi</code>, <code>e</code>.</p>
+        <dl>
+          <dt>x^2, sqrt(x), raiz(x), abs(x)</dt><dd>Potência, raiz quadrada, módulo.</dd>
+          <dt>exp(x), ln(x), log(x), log(x, b), log2(x)</dt><dd><code>log</code> sem segundo argumento é base 10.</dd>
+          <dt>sin, cos, tan, asin, acos, atan, sinh, cosh, tanh</dt><dd>Ângulos em radianos. Use <code>graus*pi/180</code> se precisar.</dd>
+          <dt>diff(expressão, variável)</dt><dd>Derivada numérica. Ex.: <code>diff(sin(t^2), t)</code>.</dd>
+          <dt>integral(expressão, variável, a, b)</dt><dd>Integral definida por Simpson.</dd>
+        </dl>
+        <p>Ao contrário da página de sistemas lineares, aqui a não-linearidade é o ponto: <code>sin(x)</code>, <code>exp(x)</code> e potências da incógnita são bem-vindos.</p>
+      </div>
+    </section>
+  </div>
+</div>
+</main>
+
+<footer class="wrap">
+  Bissecção e regula falsi conforme Gilat &amp; Subramaniam, cap. 3; Newton-Raphson e secante conforme Chapra &amp; Canale, cap. 6. Arquivo único, sem conexão com a internet: funciona ao abrir localmente e no GitHub Pages.
+</footer>
+
+<script>
+"use strict";
+
+/* =======================================================================
+   1. ANALISADOR DE EXPRESSÕES  (idêntico ao da página de sistemas lineares)
+   ======================================================================= */
+function tokenize(src){
+  const t=[]; let i=0;
+  const isDig=c=>c>='0'&&c<='9';
+  const isAl=c=>/[A-Za-z_]/.test(c);
+  while(i<src.length){
+    const c=src[i];
+    if(/\s/.test(c)){i++;continue;}
+    if(isDig(c)||(c==='.'&&isDig(src[i+1]||''))){
+      let j=i; while(j<src.length&&(isDig(src[j])||src[j]==='.'))j++;
+      if(src[j]==='e'||src[j]==='E'){
+        let k=j+1; if(src[k]==='+'||src[k]==='-')k++;
+        if(isDig(src[k]||'')){ while(k<src.length&&isDig(src[k]))k++; j=k; }
+      }
+      const v=parseFloat(src.slice(i,j));
+      if(!isFinite(v)) throw new Error('Número inválido em "'+src.slice(i,j)+'"');
+      t.push({t:'num',v}); i=j; continue;
+    }
+    if(isAl(c)){ let j=i; while(j<src.length&&/[A-Za-z0-9_]/.test(src[j]))j++; t.push({t:'id',v:src.slice(i,j)}); i=j; continue; }
+    if('+-*/^(),'.indexOf(c)>=0){ t.push({t:c}); i++; continue; }
+    throw new Error('Caractere não reconhecido: "'+c+'"');
+  }
+  return t;
+}
+
+function parse(src){
+  const tk=tokenize(src); let p=0;
+  const peek=()=>tk[p], eat=k=>{ if(!tk[p]||tk[p].t!==k) throw new Error('Esperado "'+k+'"'); return tk[p++]; };
+  function expr(){
+    let n=term();
+    while(peek()&&(peek().t==='+'||peek().t==='-')){ const op=tk[p++].t; n={k:'bin',op,a:n,b:term()}; }
+    return n;
+  }
+  function startsFactor(){ const q=peek(); return q&&(q.t==='num'||q.t==='id'||q.t==='('); }
+  function term(){
+    let n=unary();
+    for(;;){
+      const q=peek();
+      if(q&&(q.t==='*'||q.t==='/')){ const op=tk[p++].t; n={k:'bin',op,a:n,b:unary()}; }
+      else if(startsFactor()){ n={k:'bin',op:'*',a:n,b:unary()}; }
+      else return n;
+    }
+  }
+  function unary(){
+    const q=peek();
+    if(q&&(q.t==='-'||q.t==='+')){ p++; const n=unary(); return q.t==='-'?{k:'neg',a:n}:n; }
+    return power();
+  }
+  function power(){
+    const base=primary();
+    if(peek()&&peek().t==='^'){ p++; return {k:'bin',op:'^',a:base,b:unary()}; }
+    return base;
+  }
+  function primary(){
+    const q=peek();
+    if(!q) throw new Error('Expressão incompleta');
+    if(q.t==='num'){ p++; return {k:'num',v:q.v}; }
+    if(q.t==='('){ p++; const n=expr(); eat(')'); return n; }
+    if(q.t==='id'){
+      p++;
+      if(peek()&&peek().t==='('){
+        p++; const args=[];
+        if(peek()&&peek().t!==')'){ args.push(expr()); while(peek()&&peek().t===','){ p++; args.push(expr()); } }
+        eat(')');
+        return {k:'call',name:q.v,args};
+      }
+      return {k:'var',name:q.v};
+    }
+    throw new Error('Token inesperado');
+  }
+  const root=expr();
+  if(p<tk.length) throw new Error('Sobrou conteúdo depois da expressão');
+  return root;
+}
+
+const FN={
+  sin:Math.sin, cos:Math.cos, tan:Math.tan,
+  asin:Math.asin, acos:Math.acos, atan:Math.atan,
+  sinh:Math.sinh, cosh:Math.cosh, tanh:Math.tanh,
+  exp:Math.exp, ln:Math.log, log10:x=>Math.log10(x), log2:x=>Math.log2(x),
+  sqrt:Math.sqrt, raiz:Math.sqrt, abs:Math.abs, sign:Math.sign,
+  floor:Math.floor, ceil:Math.ceil, round:Math.round
+};
+
+function evalNode(n,sc){
+  switch(n.k){
+    case 'num': return n.v;
+    case 'neg': return -evalNode(n.a,sc);
+    case 'var':{
+      if(Object.prototype.hasOwnProperty.call(sc,n.name)) return sc[n.name];
+      if(n.name==='pi'||n.name==='PI') return Math.PI;
+      if(n.name==='e') return Math.E;
+      throw new Error('Símbolo desconhecido: "'+n.name+'". Declare como parâmetro ou renomeie a incógnita.');
+    }
+    case 'bin':{
+      const a=evalNode(n.a,sc), b=evalNode(n.b,sc);
+      switch(n.op){case '+':return a+b;case '-':return a-b;case '*':return a*b;case '/':return a/b;case '^':return Math.pow(a,b);}
+      throw new Error('Operador inválido');
+    }
+    case 'call':{
+      const nm=n.name;
+      if(nm==='diff'){
+        if(n.args.length<2) throw new Error('diff(expressão, variável)');
+        const vn=n.args[1].name; if(!vn) throw new Error('O 2º argumento de diff deve ser um nome de variável');
+        const ordem=n.args[2]?evalNode(n.args[2],sc):1;
+        const x0=evalNode({k:'var',name:vn},sc);
+        const h=1e-5*Math.max(1,Math.abs(x0));
+        const f=v=>{const s2=Object.assign({},sc); s2[vn]=v; return evalNode(n.args[0],s2);};
+        if(ordem>=2) return (f(x0+h)-2*f(x0)+f(x0-h))/(h*h);
+        return (f(x0+h)-f(x0-h))/(2*h);
+      }
+      if(nm==='integral'||nm==='integrate'){
+        if(n.args.length<4) throw new Error('integral(expressão, variável, a, b)');
+        const vn=n.args[1].name; if(!vn) throw new Error('O 2º argumento de integral deve ser um nome de variável');
+        const a=evalNode(n.args[2],sc), b=evalNode(n.args[3],sc);
+        const f=v=>{const s2=Object.assign({},sc); s2[vn]=v; return evalNode(n.args[0],s2);};
+        let N=400; const h=(b-a)/N; let s=f(a)+f(b);
+        for(let i=1;i<N;i++) s+=(i%2?4:2)*f(a+i*h);
+        return s*h/3;
+      }
+      const args=n.args.map(x=>evalNode(x,sc));
+      if(nm==='log') return args.length>1?Math.log(args[0])/Math.log(args[1]):Math.log10(args[0]);
+      if(nm==='pow') return Math.pow(args[0],args[1]);
+      if(nm==='min') return Math.min.apply(null,args);
+      if(nm==='max') return Math.max.apply(null,args);
+      if(FN[nm]) return FN[nm].apply(null,args);
+      throw new Error('Função desconhecida: "'+nm+'"');
+    }
+  }
+  throw new Error('Nó inválido');
+}
+
+/* =======================================================================
+   2. MÉTODOS
+   ======================================================================= */
+function relErr(novo,velho){
+  if(velho===null||velho===undefined||!isFinite(novo)||!isFinite(velho)) return null;
+  return Math.abs(novo)>1e-300 ? Math.abs((novo-velho)/novo)*100 : Math.abs(novo-velho)*100;
+}
+function errVerd(x,ref){
+  if(ref===null||!isFinite(x)||!isFinite(ref)) return null;
+  return Math.abs(ref)>1e-300 ? Math.abs((ref-x)/ref)*100 : Math.abs(ref-x)*100;
+}
+
+function checarBolzano(f,a,b){
+  const fa=f(a), fb=f(b);
+  if(!isFinite(fa)||!isFinite(fb)) throw new Error('f(a) ou f(b) não é um número finito. Ajuste o intervalo.');
+  if(fa===0) return {raiz:a};
+  if(fb===0) return {raiz:b};
+  if(fa*fb>0) throw new Error('f(a)·f(b) > 0, com f(a) = '+fmt(fa)+' e f(b) = '+fmt(fb)+
+    '. O teorema de Bolzano não garante raiz em [a, b] — use "Procurar mudanças de sinal".');
+  return {fa,fb};
+}
+
+/* bissecção — Gilat cap. 3 */
+function bissec(f,o){
+  let a=o.a,b=o.b;
+  const chk=checarBolzano(f,a,b);
+  if(chk.raiz!==undefined) return {x:chk.raiz,its:[{k:1,a,b,x:chk.raiz,fx:0,tol:0,ea:0,geo:{t:'brk',a,b,c:chk.raiz}}],conv:true};
+  let fa=chk.fa;
+  const its=[]; let c=a, ant=null, conv=false;
+  for(let k=1;k<=o.maxit;k++){
+    c=(a+b)/2;
+    const fc=f(c), tol=Math.abs(b-a)/2;
+    its.push({k,a,b,x:c,fx:fc,tol,ea:ant===null?100:relErr(c,ant),geo:{t:'brk',a,b,c}});
+    if(Math.abs(fc)<o.tolf||tol<o.tolx){ conv=true; break; }
+    if(fa*fc<0){ b=c; } else { a=c; fa=fc; }
+    ant=c;
+  }
+  return {x:c,its,conv};
+}
+
+/* regula falsi — Gilat cap. 3 */
+function regula(f,o){
+  let a=o.a,b=o.b;
+  const chk=checarBolzano(f,a,b);
+  if(chk.raiz!==undefined) return {x:chk.raiz,its:[{k:1,a,b,x:chk.raiz,fx:0,ea:0,geo:{t:'chord',a,fa:0,b,fb:0,c:chk.raiz}}],conv:true};
+  let fa=chk.fa, fb=chk.fb;
+  const its=[]; let c=a, ant=null, conv=false;
+  for(let k=1;k<=o.maxit;k++){
+    const den=fb-fa;
+    if(den===0) throw new Error('f(b) − f(a) = 0 na iteração '+k+': a reta que une os extremos é horizontal.');
+    c=(a*fb-b*fa)/den;
+    const fc=f(c);
+    its.push({k,a,b,x:c,fx:fc,ea:ant===null?100:relErr(c,ant),geo:{t:'chord',a,fa,b,fb,c}});
+    if(Math.abs(fc)<o.tolf||(ant!==null&&Math.abs(c-ant)<o.tolx)){ conv=true; break; }
+    if(fa*fc<0){ b=c; fb=fc; } else { a=c; fa=fc; }
+    ant=c;
+  }
+  return {x:c,its,conv};
+}
+
+/* Newton-Raphson — Chapra cap. 6 */
+function newton(f,fp,o){
+  const its=[]; let x=o.x0, conv=false;
+  const f0=f(x);
+  if(!isFinite(f0)) throw new Error('f não é finita no chute inicial x₀ = '+fmt(x)+'.');
+  its.push({k:0,x,fx:f0,d:null,ea:null,geo:null});
+  for(let k=1;k<=o.maxit;k++){
+    const fx=f(x), d=fp(x);
+    if(!isFinite(fx)||!isFinite(d)) throw new Error('f ou f′ deixou de ser finita em x = '+fmt(x)+' na iteração '+k+'.');
+    if(d===0) throw new Error('f′(x) = 0 na iteração '+k+': a tangente é horizontal e nunca cruza o eixo x.');
+    const xn=x-fx/d;
+    if(!isFinite(xn)||Math.abs(xn)>1e12) throw new Error('A sequência divergiu na iteração '+k+'. Aproxime o chute inicial da raiz.');
+    const fxn=f(xn);
+    its.push({k,x:xn,fx:fxn,d,ea:relErr(xn,x),geo:{t:'tan',x,fx,d,xn}});
+    const parou=Math.abs(fxn)<o.tolf||Math.abs(xn-x)<o.tolx;
+    x=xn;
+    if(parou){ conv=true; break; }
+  }
+  return {x,its,conv};
+}
+
+/* secante — Chapra cap. 6 */
+function secante(f,o){
+  const its=[]; let xa=o.x0, x=o.x1, conv=false;
+  const fa0=f(xa), fx0=f(x);
+  if(!isFinite(fa0)||!isFinite(fx0)) throw new Error('f não é finita em um dos chutes iniciais.');
+  its.push({k:-1,xa:null,xi:null,x:xa,fx:fa0,ea:null,geo:null});
+  its.push({k:0, xa:null,xi:null,x,   fx:fx0,ea:null,geo:null});
+  for(let k=1;k<=o.maxit;k++){
+    const fxa=f(xa), fx=f(x), den=fxa-fx;
+    if(den===0) throw new Error('f(x'+(k-2)+') = f(x'+(k-1)+') na iteração '+k+': divisão por zero.');
+    const xn=x-fx*(xa-x)/den;
+    if(!isFinite(xn)||Math.abs(xn)>1e12) throw new Error('A sequência divergiu na iteração '+k+'. Aproxime os dois chutes iniciais da raiz.');
+    const fxn=f(xn);
+    its.push({k,xa,xi:x,x:xn,fx:fxn,ea:relErr(xn,x),geo:{t:'sec',xa,fa:fxa,xi:x,fi:fx,xn}});
+    const parou=Math.abs(fxn)<o.tolf||Math.abs(xn-x)<o.tolx;
+    xa=x; x=xn;
+    if(parou){ conv=true; break; }
+  }
+  return {x,its,conv};
+}
+
+function rodar(id,f,fp,o){
+  switch(id){
+    case 'bissec': return bissec(f,o);
+    case 'regula': return regula(f,o);
+    case 'newton': return newton(f,fp,o);
+    case 'secante':return secante(f,o);
+  }
+  throw new Error('Método inválido');
+}
+
+/* raiz de referência para o erro verdadeiro: mesmo problema levado ao limite da máquina */
+function raizRef(f,o,temBracket){
+  try{
+    if(temBracket){
+      let a=o.a,b=o.b,fa=f(a);
+      if(!isFinite(fa)||!isFinite(f(b))||fa*f(b)>0) return null;
+      for(let k=0;k<200;k++){
+        const c=(a+b)/2, fc=f(c);
+        if(fc===0) return c;
+        if(fa*fc<0){ b=c; } else { a=c; fa=fc; }
+      }
+      return (a+b)/2;
+    }
+    let xa=o.x0, x=(o.x1!==undefined&&o.x1!==o.x0)?o.x1:o.x0*(1+1e-4)+1e-4;
+    for(let k=0;k<200;k++){
+      const fxa=f(xa), fx=f(x), den=fxa-fx;
+      if(den===0) break;
+      const xn=x-fx*(xa-x)/den;
+      if(!isFinite(xn)||Math.abs(xn)>1e12) return null;
+      if(xn===x) break;
+      xa=x; x=xn;
+    }
+    return isFinite(x)?x:null;
+  }catch(e){ return null; }
+}
+
+/* =======================================================================
+   3. INTERFACE
+   ======================================================================= */
+const METHODS=[
+  {id:'bissec', nome:'Bissecção', tipo:'brk', cor:'#2f5fd0',
+   desc:'Corta o intervalo ao meio a cada passo e fica com a metade onde f troca de sinal. Nunca falha, mas é a mais lenta.',
+   fx:'xNS = (a + b) / 2'},
+  {id:'regula', nome:'Regula falsi', tipo:'brk', cor:'#c07600',
+   desc:'Liga (a, f(a)) a (b, f(b)) por uma reta e toma o cruzamento com o eixo x. Usa o valor de f, ao contrário da bissecção.',
+   fx:'xNS = (a·f(b) − b·f(a)) / (f(b) − f(a))'},
+  {id:'newton', nome:'Newton-Raphson', tipo:'open1', cor:'#0f766e',
+   desc:'Segue a tangente em (xi, f(xi)) até o eixo x. Dobra os algarismos corretos a cada iteração — quando converge.',
+   fx:'x(i+1) = xi − f(xi) / f′(xi)'},
+  {id:'secante',nome:'Secante', tipo:'open2', cor:'#8b2fa0',
+   desc:'Troca a tangente de Newton pela reta que passa pelos dois últimos pontos. Dispensa a derivada.',
+   fx:'x(i+1) = xi − f(xi)·(x(i−1) − xi) / (f(x(i−1)) − f(xi))'}
+];
+const COR=id=>(METHODS.find(m=>m.id===id)||{}).cor||'#2f5fd0';
+
+const PRESETS=[
+  {fx:'8 - 4.5*(x - sin(x))', v:'x', a:2, b:3, x0:2, x1:3, dfx:'-4.5*(1 - cos(x))', tolx:0.001, params:[]},
+  {fx:'exp(-x) - x', v:'x', a:0, b:1, x0:0, x1:1, dfx:'-exp(-x) - 1', tolx:1e-8, params:[]},
+  {fx:'x^10 - 1', v:'x', a:0, b:1.3, x0:0.5, x1:1.3, dfx:'10*x^9', tolx:1e-8, params:[]},
+  {fx:'Z^3 - Z^2 + (A - B - B^2)*Z - A*B', v:'Z', a:0.4, b:1, x0:1, x1:0.9,
+   dfx:'3*Z^2 - 2*Z + (A - B - B^2)', tolx:1e-10,
+   params:[{name:'A',value:0.24,step:0.01},{name:'B',value:0.035,step:0.005}]}
+];
+
+const $=s=>document.querySelector(s);
+let params=[];
+let method='bissec';
+let last=null;          /* último resultado do método ativo */
+let cmp=null;           /* resultados dos quatro, quando comparando */
+let ref=null;           /* raiz de referência */
+let fcache=null;        /* {f, fp, varname, src} válido */
+let ksel=0;             /* iteração destacada */
+let hidden={};          /* métodos ocultos na comparação */
+
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function fmt(v,d){
+  if(v===null||v===undefined||Number.isNaN(v)) return '—';
+  if(v===0) return '0';
+  const a=Math.abs(v);
+  if(a>=1e6||a<1e-4) return v.toExponential(d||4).replace('e','·10^');
+  return (+v.toFixed(d===undefined?6:d)).toString();
+}
+function pct(v){
+  if(v===null||v===undefined||Number.isNaN(v)) return '—';
+  if(v===0) return '0';
+  return Math.abs(v)<1e-4?v.toExponential(3).replace('e','·10^'):(+v.toFixed(4)).toString();
+}
+
+/* ---- método ---- */
+function renderMethods(){
+  $('#methods').innerHTML=METHODS.map(m=>
+    '<label class="'+(m.id===method?'on':'')+'"><input type="radio" name="mt" value="'+m.id+'"'+(m.id===method?' checked':'')+
+    '><span>'+m.nome+'<small>'+m.desc+'</small><span class="fx">'+esc(m.fx)+'</span></span></label>').join('');
+  $('#methods').querySelectorAll('input').forEach(r=>r.addEventListener('change',()=>{
+    method=r.value; renderMethods(); ajustarCampos(); run();
+  }));
+}
+function metodoAtual(){ return METHODS.find(m=>m.id===method); }
+
+function ajustarCampos(){
+  const m=metodoAtual();
+  $('#brk').style.display   = m.tipo==='brk' ? '' : 'none';
+  $('#open').style.display  = m.tipo==='brk' ? 'none' : '';
+  $('#x1wrap').style.display= m.tipo==='open2' ? '' : 'none';
+  $('#lb0').textContent     = m.tipo==='open2' ? 'x₋₁' : 'x₀';
+  $('#dercard').style.opacity = method==='newton' ? '1' : '.55';
+  $('#startmeta').textContent = m.tipo==='brk' ? 'intervalo que confina a raiz'
+                              : m.tipo==='open2' ? 'dois pontos, sem precisar cercar a raiz'
+                              : 'um ponto, sem precisar cercar a raiz';
+  $('#usebrk').style.display = m.tipo==='brk' ? 'none' : '';
+}
+
+/* ---- parâmetros ---- */
+function renderParams(){
+  const tb=$('#params');
+  if(!params.length){
+    tb.innerHTML='<tr><td colspan="5" style="color:var(--muted);font-size:12.5px;padding:6px 0">Nenhum parâmetro. A função depende só da incógnita.</td></tr>';
+    return;
+  }
+  tb.innerHTML=params.map((p,i)=>
+    '<tr data-i="'+i+'">'+
+    '<td class="nm"><input type="text" class="p-name" value="'+esc(p.name)+'" spellcheck="false"></td>'+
+    '<td><input type="number" class="p-val" value="'+p.value+'" step="any"></td>'+
+    '<td class="stepbtns"><button class="p-dec" title="diminuir">−</button><button class="p-inc" title="aumentar">+</button></td>'+
+    '<td class="stp"><input type="number" class="p-step" value="'+p.step+'" step="any"></td>'+
+    '<td><button class="tiny p-del" title="remover">×</button></td>'+
+    '</tr>').join('');
+  tb.querySelectorAll('tr[data-i]').forEach(tr=>{
+    const i=+tr.dataset.i, val=tr.querySelector('.p-val');
+    const mexer=d=>{
+      const casas=Math.max(0,(String(params[i].step).split('.')[1]||'').length);
+      params[i].value=+(params[i].value+d*params[i].step).toFixed(casas+6);
+      val.value=params[i].value; run();
+    };
+    tr.querySelector('.p-name').addEventListener('change',e=>{params[i].name=e.target.value.trim();renderPad();run();});
+    val.addEventListener('input',e=>{params[i].value=+e.target.value;run();});
+    tr.querySelector('.p-step').addEventListener('input',e=>{params[i].step=+e.target.value||1;});
+    tr.querySelector('.p-inc').addEventListener('click',()=>mexer(+1));
+    tr.querySelector('.p-dec').addEventListener('click',()=>mexer(-1));
+    tr.querySelector('.p-del').addEventListener('click',()=>{params.splice(i,1);renderParams();renderPad();run();});
+  });
+}
+function pscope(){ const s={}; params.forEach(p=>{ if(p.name) s[p.name]=p.value; }); return s; }
+
+/* ---- teclado ---- */
+const OPS=[['+',' + '],['−',' - '],['×',' * '],['÷',' / '],['^','^'],['( )','()'],['x²','^2'],['x³','^3']];
+const FUNCS=[['√','sqrt()'],['sin','sin()'],['cos','cos()'],['tan','tan()'],['ln','ln()'],['log','log()'],['exp','exp()'],['π','pi']];
+function renderPad(){
+  const v=($('#varname').value||'x').trim();
+  const ps=params.map(p=>p.name).filter(Boolean);
+  const linha=(tag,itens,cls)=>'<div class="pad-row"><span class="pad-tag">'+tag+'</span>'+
+    (itens.length?itens.map(it=>'<button class="'+cls+'" data-ins="'+esc(it[1])+'">'+esc(it[0])+'</button>').join('')
+                 :'<span class="empty">nenhum declarado</span>')+'</div>';
+  $('#pad').innerHTML=
+    linha('incógnita',[[v,v]],'v')+
+    linha('parâmetros',ps.map(p=>[p,p]),'p')+
+    linha('operações',OPS,'op')+
+    linha('funções',FUNCS,'op');
+  $('#pad').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>inserir(b.dataset.ins)));
+}
+function inserir(txt){
+  const ta=$('#fx'), a=ta.selectionStart, b=ta.selectionEnd, sel=ta.value.slice(a,b);
+  let out=txt, cur=txt.length;
+  const par=txt.indexOf('(');
+  if(par>=0){ out=txt.slice(0,par+1)+sel+txt.slice(par+1); cur=par+1+sel.length; }
+  ta.value=ta.value.slice(0,a)+out+ta.value.slice(b);
+  ta.focus(); ta.setSelectionRange(a+cur,a+cur);
+  run();
+}
+
+/* ---- leitura da entrada ---- */
+function compilar(){
+  const v=($('#varname').value||'x').trim();
+  if(!v) throw new Error('Dê um nome à incógnita.');
+  let src=$('#fx').value.trim();
+  if(!src) throw new Error('Escreva a função f('+v+').');
+  let node;
+  const partes=src.split('=');
+  if(partes.length===2)      node={k:'bin',op:'-',a:parse(partes[0]),b:parse(partes[1])};
+  else if(partes.length===1) node=parse(src);
+  else throw new Error('Use no máximo um sinal de igual.');
+
+  const base=pscope();
+  const f=x=>{ const s=Object.assign({},base); s[v]=x; return evalNode(node,s); };
+
+  const dsrc=$('#dfx').value.trim();
+  let fp;
+  if(dsrc){
+    const dnode=parse(dsrc);
+    fp=x=>{ const s=Object.assign({},base); s[v]=x; return evalNode(dnode,s); };
+  }else{
+    fp=x=>{ const h=1e-6*Math.max(1,Math.abs(x)); return (f(x+h)-f(x-h))/(2*h); };
+  }
+  return {f,fp,v,src,numerica:!dsrc};
+}
+
+function opcoes(){
+  return {
+    a:+$('#a').value, b:+$('#b').value,
+    x0:+$('#x0').value, x1:+$('#x1').value,
+    tolx:Math.max(0,+$('#tolx').value||0),
+    tolf:Math.max(0,+$('#tolf').value||0),
+    maxit:Math.max(1,Math.min(2000,+$('#maxit').value||1))
+  };
+}
+
+/* ---- execução ---- */
+function run(){
+  let c;
+  try{ c=compilar(); }
+  catch(e){ falhar(e.message); return; }
+  fcache=c;
+  $('#fxmeta').textContent='f('+c.v+') = 0';
+  const o=opcoes();
+  const m=metodoAtual();
+
+  /* aviso de Bolzano sempre visível para os métodos de confinamento */
+  if(m.tipo==='brk'){
+    try{
+      const fa=c.f(o.a), fb=c.f(o.b);
+      $('#bolzano').innerHTML= (isFinite(fa)&&isFinite(fb))
+        ? 'f(a) = '+fmt(fa)+' · f(b) = '+fmt(fb)+' → produto '+(fa*fb<0?'<b style="color:var(--green)">negativo, há raiz</b>':'<b style="color:var(--red)">positivo, sem garantia</b>')
+        : 'f não é finita em um dos extremos.';
+    }catch(e){ $('#bolzano').textContent=''; }
+  }
+
+  ref=raizRef(c.f,o,m.tipo==='brk');
+
+  try{
+    last=rodar(method,c.f,c.fp,o);
+  }catch(e){ falhar(e.message); return; }
+
+  cmp = $('#cmpon').checked ? compararTodos(c,o) : null;
+
+  ksel=Math.max(0,Math.min(ksel,last.its.length-1));
+  $('#kslider').max=Math.max(0,last.its.length-1);
+  $('#kslider').value=ksel;
+  render();
+  desenharF(); desenharConv(); renderLegend();
+}
+
+function falhar(msg){
+  last=null; cmp=null;
+  $('#out').innerHTML='<div class="msg err">'+esc(msg)+'</div>';
+  $('#solmeta').textContent='';
+  $('#live').innerHTML=''; $('#legend').innerHTML=''; $('#cmpout').innerHTML='';
+  $('#kslider').max=0; $('#klabel').textContent='';
+  desenharF(); desenharConv();
+}
+
+function compararTodos(c,o){
+  const out={};
+  METHODS.forEach(m=>{
+    try{ out[m.id]={r:rodar(m.id,c.f,c.fp,o),erro:null}; }
+    catch(e){ out[m.id]={r:null,erro:e.message}; }
+  });
+  return out;
+}
+
+/* ---- resultados ---- */
+function colunas(){
+  const v=fcache?fcache.v:'x';
+  switch(method){
+    case 'bissec': return ['iter','a','b',v+'ns','f('+v+'ns)','tolerância','ε_a (%)','ε_t (%)'];
+    case 'regula': return ['iter','a','b',v+'ns','f('+v+'ns)','ε_a (%)','ε_t (%)'];
+    case 'newton': return ['i',v+'i','f('+v+'i)','f′ usada','ε_a (%)','ε_t (%)'];
+    case 'secante':return ['i',v+'(i−1)',v+'i',v+'(i+1)','f('+v+'(i+1))','ε_a (%)','ε_t (%)'];
+  }
+}
+function linha(it){
+  const et=errVerd(it.x,ref);
+  switch(method){
+    case 'bissec': return [it.k,fmt(it.a),fmt(it.b),fmt(it.x),fmt(it.fx),fmt(it.tol),pct(it.ea),pct(et)];
+    case 'regula': return [it.k,fmt(it.a),fmt(it.b),fmt(it.x),fmt(it.fx),pct(it.ea),pct(et)];
+    case 'newton': return [it.k,fmt(it.x,9),fmt(it.fx),it.d===null?'—':fmt(it.d),pct(it.ea),pct(et)];
+    case 'secante':return [it.k,it.xa===null?'—':fmt(it.xa),it.xi===null?'—':fmt(it.xi),fmt(it.x),fmt(it.fx),pct(it.ea),pct(et)];
+  }
+}
+
+function render(){
+  const m=metodoAtual(), v=fcache.v;
+  const it=last.its[last.its.length-1];
+  let h='';
+
+  if(!last.conv)
+    h+='<div class="msg warn">Parou em '+it.k+' iterações sem atingir a tolerância. Aumente o limite de iterações, afrouxe ε ou revise o ponto de partida.</div>';
+  if(method==='newton'&&fcache.numerica)
+    h+='<div class="msg warn">f′ está sendo estimada por diferença centrada. Para a convergência quadrática aparecer até o fim, escreva f′('+esc(v)+') no campo 6.</div>';
+  if(method==='regula'&&last.its.length>3){
+    const u=last.its.slice(-3);
+    if(u.every(r=>r.a===u[0].a)||u.every(r=>r.b===u[0].b))
+      h+='<div class="msg warn">Um dos extremos ficou travado nas últimas iterações: é o ponto fraco da regula falsi em funções bem curvas. A bissecção fecha o intervalo mais rápido aqui.</div>';
+  }
+
+  h+='<div class="sol">'+
+     '<div><b>raiz</b><span>'+fmt(last.x,10)+'</span></div>'+
+     '<div><b>f(raiz)</b><span>'+fmt(it.fx)+'</span></div>'+
+     '<div><b>iterações</b><span>'+Math.max(0,it.k)+'</span></div>'+
+     '<div><b>ε_a final</b><span>'+pct(it.ea)+' %</span></div>'+
+     '</div>';
+  h+='<p class="hint">ε_t usa como referência a raiz levada ao limite da máquina: '+
+     (ref===null?'não foi possível calcular':fmt(ref,12))+'.</p>';
+
+  h+='<details open><summary>Iterações</summary><div class="scroll"><table class="it"><thead><tr>'+
+     colunas().map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr></thead><tbody>';
+  last.its.forEach((r,i)=>{
+    h+='<tr data-i="'+i+'"'+(i===ksel?' class="sel"':'')+'>'+
+       linha(r).map(c=>'<td>'+c+'</td>').join('')+'</tr>';
+  });
+  h+='</tbody></table></div></details>';
+
+  $('#out').innerHTML=h;
+  $('#out').querySelectorAll('tr[data-i]').forEach(tr=>tr.addEventListener('click',()=>{
+    ksel=+tr.dataset.i; $('#kslider').value=ksel;
+    $('#out').querySelectorAll('tr[data-i]').forEach(t=>t.classList.toggle('sel',t===tr));
+    renderLive(); desenharF();
+  }));
+  $('#solmeta').textContent=m.nome;
+  renderLive();
+  renderCmp();
+}
+
+function renderLive(){
+  if(!last||!last.its.length){ $('#live').innerHTML=''; $('#klabel').textContent=''; return; }
+  const it=last.its[ksel], v=fcache.v, et=errVerd(it.x,ref);
+  $('#klabel').textContent='k = '+it.k+' de '+last.its[last.its.length-1].k;
+  $('#live').innerHTML=
+    '<div style="border-left-color:'+COR(method)+'"><b>'+esc(v)+'</b> = '+fmt(it.x,9)+'</div>'+
+    '<div><b>f('+esc(v)+')</b> = '+fmt(it.fx)+'</div>'+
+    (it.tol!==undefined?'<div><b>tolerância</b> = '+fmt(it.tol)+'</div>':'')+
+    '<div><b>ε_a</b> = '+pct(it.ea)+' %</div>'+
+    '<div><b>ε_t</b> = '+pct(et)+' %</div>';
+}
+
+function renderCmp(){
+  if(!cmp){ $('#cmpout').innerHTML=''; return; }
+  let h='<table class="cmp"><thead><tr><th>Método</th><th>Raiz</th><th>Iterações</th><th>ε_t final (%)</th></tr></thead><tbody>';
+  METHODS.forEach(m=>{
+    const c=cmp[m.id];
+    if(!c.r){ h+='<tr><td><i style="background:'+m.cor+'"></i>'+m.nome+'</td><td colspan="3" style="color:var(--red);font-family:var(--sans);font-size:12.5px">'+esc(c.erro)+'</td></tr>'; return; }
+    const u=c.r.its[c.r.its.length-1];
+    h+='<tr><td><i style="background:'+m.cor+'"></i>'+m.nome+'</td><td>'+fmt(c.r.x,10)+'</td><td>'+Math.max(0,u.k)+
+       (c.r.conv?'':' (não convergiu)')+'</td><td>'+pct(errVerd(c.r.x,ref))+'</td></tr>';
+  });
+  $('#cmpout').innerHTML=h+'</tbody></table>'+
+    '<p class="hint">Todos partem dos mesmos dados: bissecção e regula falsi usam [a, b]; Newton usa x₀; a secante usa x₋₁ e x₀. Ajuste os campos 4 e 5 para mudar a comparação.</p>';
+}
+
+function renderLegend(){
+  if(!cmp){ $('#legend').innerHTML=''; return; }
+  $('#legend').innerHTML=METHODS.map(m=>
+    '<button class="'+(hidden[m.id]?'off':'')+'" data-m="'+m.id+'"><i style="background:'+m.cor+'"></i>'+m.nome+'</button>').join('');
+  $('#legend').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+    hidden[b.dataset.m]=!hidden[b.dataset.m]; renderLegend(); desenharConv();
+  }));
+}
+
+/* =======================================================================
+   4. GRÁFICOS
+   ======================================================================= */
+const MARG={L:64,R:16,T:14,B:34};
+function niceStep(r){
+  const e=Math.pow(10,Math.floor(Math.log10(Math.abs(r)||1))), f=r/e;
+  return (f<1.5?1:f<3?2:f<7?5:10)*e;
+}
+function ticks(a,b,n){ const st=niceStep((b-a)/n), out=[]; for(let v=Math.ceil(a/st)*st; v<=b+1e-9; v+=st) out.push(v); return out; }
+function prep(cv){
+  const ctx=cv.getContext('2d'), dpr=window.devicePixelRatio||1;
+  const W=cv.clientWidth, H=cv.clientHeight;
+  cv.width=W*dpr; cv.height=H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H);
+  return {ctx,W,H,w:W-MARG.L-MARG.R,h:H-MARG.T-MARG.B,fonte:getComputedStyle(document.body).fontFamily};
+}
+function vazio(g,txt){
+  g.ctx.fillStyle='#8896a5'; g.ctx.font='13px '+g.fonte; g.ctx.textAlign='center'; g.ctx.textBaseline='middle';
+  g.ctx.fillText(txt,g.W/2,g.H/2);
+}
+
+function janelaX(){
+  if(!$('#xauto').checked){
+    const a=+$('#xmin').value, b=+$('#xmax').value;
+    if(isFinite(a)&&isFinite(b)&&b>a) return [a,b];
+  }
+  const xs=[];
+  if(last) last.its.forEach(r=>{ if(isFinite(r.x)) xs.push(r.x); if(isFinite(r.a)) xs.push(r.a); if(isFinite(r.b)) xs.push(r.b); });
+  if(ref!==null) xs.push(ref);
+  const m=metodoAtual();
+  if(m.tipo==='brk'){ xs.push(+$('#a').value,+$('#b').value); }
+  else { xs.push(+$('#x0').value); if(m.tipo==='open2') xs.push(+$('#x1').value); }
+  const v=xs.filter(isFinite);
+  if(!v.length) return [-1,1];
+  let lo=Math.min.apply(null,v), hi=Math.max.apply(null,v);
+  if(hi-lo<1e-9){ const d=Math.max(1,Math.abs(lo)*0.5); lo-=d; hi+=d; }
+  const pad=(hi-lo)*0.15;
+  return [lo-pad,hi+pad];
+}
+
+function desenharF(){
+  const cv=$('#plotf'), g=prep(cv);
+  if(!last||!fcache){ vazio(g,'Corrija a função para gerar o gráfico.'); return; }
+  const {ctx,w,h,fonte}=g, {L,T}=MARG;
+  const [x0,x1]=janelaX();
+
+  /* amostra f */
+  const N=700, pts=[];
+  for(let i=0;i<=N;i++){
+    const x=x0+(x1-x0)*i/N;
+    let y; try{ y=fcache.f(x); }catch(e){ y=NaN; }
+    pts.push({x,y:isFinite(y)?y:NaN});
+  }
+  const ys=pts.map(p=>p.y).filter(isFinite);
+  if(!ys.length){ vazio(g,'f não é finita nessa janela.'); return; }
+  let lo=Math.min.apply(null,ys), hi=Math.max.apply(null,ys);
+  /* recorta caudas absurdas para a curva não virar uma linha reta */
+  const ord=ys.slice().sort((a,b)=>a-b);
+  const q=(p)=>ord[Math.min(ord.length-1,Math.max(0,Math.round(p*(ord.length-1))))];
+  const i5=q(0.03), i95=q(0.97), span=Math.abs(i95-i5)||1;
+  if(hi-lo>40*span){ lo=i5-span; hi=i95+span; }
+  if(lo>0) lo=-0.08*(hi-lo||1);
+  if(hi<0) hi= 0.08*(hi-lo||1);
+  if(hi-lo<1e-12){ lo-=1; hi+=1; }
+  const pad=(hi-lo)*0.08; lo-=pad; hi+=pad;
+
+  const px=v=>L+(v-x0)/(x1-x0)*w, py=v=>T+h-(v-lo)/(hi-lo)*h;
+  const clampY=v=>Math.max(T-40,Math.min(T+h+40,py(v)));
+
+  /* grade */
+  ctx.strokeStyle='#e6ebf1'; ctx.lineWidth=1; ctx.fillStyle='#7b8794'; ctx.font='11px '+fonte;
+  ctx.textAlign='right'; ctx.textBaseline='middle';
+  ticks(lo,hi,5).forEach(v=>{ const y=py(v); ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(L+w,y); ctx.stroke(); ctx.fillText(fmt(v,3),L-7,y); });
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  ticks(x0,x1,6).forEach(v=>{ const x=px(v); ctx.beginPath(); ctx.moveTo(x,T); ctx.lineTo(x,T+h); ctx.stroke(); ctx.fillText(fmt(v,3),x,T+h+7); });
+  ctx.strokeStyle='#aab6c2';
+  ctx.beginPath(); ctx.moveTo(L,T); ctx.lineTo(L,T+h); ctx.lineTo(L+w,T+h); ctx.stroke();
+  if(lo<0&&hi>0){ ctx.strokeStyle='#94a2b1'; ctx.beginPath(); ctx.moveTo(L,py(0)); ctx.lineTo(L+w,py(0)); ctx.stroke(); }
+  ctx.fillStyle='#5d6b7b'; ctx.textAlign='right'; ctx.textBaseline='bottom';
+  ctx.fillText(fcache.v,L+w,g.H-2);
+
+  const it=last.its[ksel], geo=it?it.geo:null;
+
+  /* construção geométrica da iteração selecionada */
+  if($('#showgeo').checked&&geo){
+    ctx.save();
+    if(geo.t==='brk'){
+      ctx.fillStyle='rgba(47,95,208,.09)';
+      ctx.fillRect(px(geo.a),T,Math.max(1,px(geo.b)-px(geo.a)),h);
+      ctx.strokeStyle=COR(method); ctx.setLineDash([4,4]); ctx.lineWidth=1.2;
+      [geo.a,geo.b].forEach(v=>{ ctx.beginPath(); ctx.moveTo(px(v),T); ctx.lineTo(px(v),T+h); ctx.stroke(); });
+    }else if(geo.t==='chord'||geo.t==='sec'){
+      const A=geo.t==='chord'?geo.a:geo.xa, FA=geo.t==='chord'?geo.fa:geo.fa;
+      const B=geo.t==='chord'?geo.b:geo.xi, FB=geo.t==='chord'?geo.fb:geo.fi;
+      ctx.strokeStyle=COR(method); ctx.lineWidth=1.6; ctx.globalAlpha=.85;
+      ctx.beginPath(); ctx.moveTo(px(A),clampY(FA)); ctx.lineTo(px(B),clampY(FB)); ctx.stroke();
+      ctx.globalAlpha=1; ctx.fillStyle=COR(method);
+      [[A,FA],[B,FB]].forEach(p=>{ ctx.beginPath(); ctx.arc(px(p[0]),clampY(p[1]),3.5,0,6.284); ctx.fill(); });
+    }else if(geo.t==='tan'){
+      const yA=geo.fx+geo.d*(x0-geo.x), yB=geo.fx+geo.d*(x1-geo.x);
+      ctx.strokeStyle=COR(method); ctx.lineWidth=1.6; ctx.globalAlpha=.85;
+      ctx.beginPath(); ctx.moveTo(px(x0),clampY(yA)); ctx.lineTo(px(x1),clampY(yB)); ctx.stroke();
+      ctx.globalAlpha=1; ctx.fillStyle=COR(method);
+      ctx.beginPath(); ctx.arc(px(geo.x),clampY(geo.fx),3.5,0,6.284); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  /* curva f */
+  ctx.strokeStyle='#16202c'; ctx.lineWidth=2; ctx.lineJoin='round';
+  ctx.beginPath(); let pen=false;
+  pts.forEach(p=>{
+    if(!isFinite(p.y)||p.y<lo-1e6*(hi-lo)||p.y>hi+1e6*(hi-lo)){ pen=false; return; }
+    const X=px(p.x), Y=clampY(p.y);
+    pen?ctx.lineTo(X,Y):(ctx.moveTo(X,Y),pen=true);
+  });
+  ctx.stroke();
+
+  /* rastro das estimativas */
+  ctx.fillStyle=COR(method);
+  last.its.forEach((r,i)=>{
+    if(!isFinite(r.x)||i>ksel) return;
+    ctx.globalAlpha=i===ksel?1:.28;
+    ctx.beginPath(); ctx.arc(px(r.x),py(0),i===ksel?5.5:3,0,6.284); ctx.fill();
+  });
+  ctx.globalAlpha=1;
+
+  /* raiz de referência */
+  if(ref!==null&&isFinite(ref)){
+    ctx.strokeStyle='#0f766e'; ctx.setLineDash([3,3]); ctx.lineWidth=1.2;
+    ctx.beginPath(); ctx.moveTo(px(ref),T); ctx.lineTo(px(ref),T+h); ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  /* rótulo da iteração */
+  if(it&&isFinite(it.x)){
+    ctx.fillStyle='#16202c'; ctx.font='12px '+fonte; ctx.textAlign='center'; ctx.textBaseline='bottom';
+    const X=Math.max(L+22,Math.min(L+w-22,px(it.x)));
+    ctx.fillText(fcache.v+' = '+fmt(it.x,6),X,py(0)-9);
+  }
+}
+
+function desenharConv(){
+  const cv=$('#plotc'), g=prep(cv);
+  if(!last){ vazio(g,'Sem dados de convergência.'); return; }
+  const {ctx,w,h,fonte}=g, {L,T}=MARG;
+  const campo=$('#erro').value;
+
+  const series=[];
+  const puxa=(id,r)=>{
+    const dados=[];
+    r.its.forEach(it=>{
+      const e = campo==='ea' ? it.ea : errVerd(it.x,ref);
+      if(e!==null&&isFinite(e)&&e>0&&it.k>=1) dados.push({k:it.k,e});
+    });
+    if(dados.length) series.push({id,cor:COR(id),dados});
+  };
+  if(cmp) METHODS.forEach(m=>{ if(!hidden[m.id]&&cmp[m.id].r) puxa(m.id,cmp[m.id].r); });
+  else puxa(method,last);
+
+  if(!series.length){ vazio(g,'O erro chegou a zero já na primeira iteração — nada a traçar em escala log.'); return; }
+
+  let kmax=1, lo=Infinity, hi=-Infinity;
+  series.forEach(s=>s.dados.forEach(d=>{ kmax=Math.max(kmax,d.k); lo=Math.min(lo,d.e); hi=Math.max(hi,d.e); }));
+  let e0=Math.floor(Math.log10(lo)), e1=Math.ceil(Math.log10(hi));
+  if(e1-e0<1) e1=e0+1;
+  if(e1-e0>16) e0=e1-16;
+
+  const px=k=>L+(kmax<=1?0.5:(k-1)/(kmax-1))*w;
+  const py=e=>{ const t=(Math.log10(e)-e0)/(e1-e0); return T+h-Math.max(0,Math.min(1,t))*h; };
+
+  /* grade log */
+  ctx.font='11px '+fonte;
+  for(let e=e0;e<=e1;e++){
+    const y=py(Math.pow(10,e));
+    ctx.strokeStyle='#e6ebf1'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(L+w,y); ctx.stroke();
+    ctx.fillStyle='#7b8794'; ctx.textAlign='right'; ctx.textBaseline='middle';
+    ctx.fillText('10'+sup(e),L-7,y);
+  }
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  const passo=Math.max(1,Math.ceil(kmax/10));
+  for(let k=1;k<=kmax;k+=passo){
+    const x=px(k);
+    ctx.strokeStyle='#eff3f7'; ctx.beginPath(); ctx.moveTo(x,T); ctx.lineTo(x,T+h); ctx.stroke();
+    ctx.fillStyle='#7b8794'; ctx.fillText(String(k),x,T+h+7);
+  }
+  ctx.strokeStyle='#aab6c2'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(L,T); ctx.lineTo(L,T+h); ctx.lineTo(L+w,T+h); ctx.stroke();
+  ctx.fillStyle='#5d6b7b'; ctx.textAlign='right'; ctx.textBaseline='bottom';
+  ctx.fillText('iterações',L+w,g.H-2);
+  ctx.save(); ctx.translate(13,T+h/2); ctx.rotate(-Math.PI/2);
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(campo==='ea'?'ε_a (%)':'ε_t (%)',0,0); ctx.restore();
+
+  series.forEach(s=>{
+    ctx.strokeStyle=s.cor; ctx.lineWidth=2; ctx.lineJoin='round';
+    ctx.beginPath();
+    s.dados.forEach((d,i)=>{ const X=px(d.k),Y=py(d.e); i?ctx.lineTo(X,Y):ctx.moveTo(X,Y); });
+    ctx.stroke();
+    ctx.fillStyle=s.cor;
+    s.dados.forEach(d=>{ ctx.beginPath(); ctx.arc(px(d.k),py(d.e),2.6,0,6.284); ctx.fill(); });
+  });
+}
+function sup(n){
+  const mapa={'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+  return String(n).split('').map(c=>mapa[c]||c).join('');
+}
+
+/* =======================================================================
+   5. AUXILIARES DA INTERFACE
+   ======================================================================= */
+function varrer(){
+  let c; try{ c=compilar(); }catch(e){ $('#scanout').innerHTML='<div class="msg err">'+esc(e.message)+'</div>'; return; }
+  const m=metodoAtual();
+  let a,b;
+  if(m.tipo==='brk'){ a=+$('#a').value; b=+$('#b').value; }
+  else { a=+$('#x0').value; b=m.tipo==='open2'?+$('#x1').value:a+1; }
+  if(!(b>a)){ const t=a; a=Math.min(t,b)-5; b=Math.max(t,b)+5; }
+  const meio=(a+b)/2, largura=Math.max(10,(b-a)*8);
+  const lo=meio-largura/2, hi=meio+largura/2, N=400;
+  const achados=[];
+  let xp=lo, fp;
+  try{ fp=c.f(lo); }catch(e){ fp=NaN; }
+  for(let i=1;i<=N;i++){
+    const x=lo+(hi-lo)*i/N;
+    let fx; try{ fx=c.f(x); }catch(e){ fx=NaN; }
+    if(isFinite(fx)&&fx===0) achados.push([x-(hi-lo)/N/2,x+(hi-lo)/N/2]);
+    else if(isFinite(fp)&&isFinite(fx)&&fp*fx<0) achados.push([xp,x]);
+    xp=x; fp=fx;
+  }
+  if(!achados.length){
+    $('#scanout').innerHTML='<div class="msg warn">Nenhuma troca de sinal entre '+fmt(lo,4)+' e '+fmt(hi,4)+
+      '. Amplie a busca mudando a e b, ou verifique se a função realmente cruza o eixo.</div>';
+    return;
+  }
+  $('#scanout').innerHTML='<div class="msg ok">'+achados.length+' troca(s) de sinal entre '+fmt(lo,4)+' e '+fmt(hi,4)+
+    ':</div><div class="row" style="margin-bottom:10px">'+
+    achados.slice(0,8).map(p=>'<button class="tiny use-brk" data-a="'+p[0]+'" data-b="'+p[1]+'">['+fmt(p[0],4)+'; '+fmt(p[1],4)+']</button>').join('')+'</div>';
+  $('#scanout').querySelectorAll('.use-brk').forEach(bt=>bt.addEventListener('click',()=>{
+    const A=+bt.dataset.a, B=+bt.dataset.b;
+    $('#a').value=A; $('#b').value=B;
+    $('#x0').value=A; $('#x1').value=B;
+    $('#scanout').innerHTML=''; ksel=0; run();
+  }));
+}
+
+function aplicarPreset(i){
+  const p=PRESETS[i]; if(!p) return;
+  $('#varname').value=p.v; $('#fx').value=p.fx; $('#dfx').value=p.dfx;
+  $('#a').value=p.a; $('#b').value=p.b; $('#x0').value=p.x0; $('#x1').value=p.x1;
+  $('#tolx').value=p.tolx;
+  params=p.params.map(q=>Object.assign({},q));
+  $('#xauto').checked=true; $('#xmin').disabled=$('#xmax').disabled=true;
+  ksel=0; $('#scanout').innerHTML='';
+  renderParams(); renderPad(); run();
+}
+
+function detectar(){
+  const v=($('#varname').value||'x').trim();
+  const reservado=new Set(Object.keys(FN).concat(['log','pow','min','max','pi','e','PI','diff','integral','integrate',v]));
+  const txt=$('#fx').value+' '+$('#dfx').value;
+  const re=/[A-Za-z_][A-Za-z0-9_]*/g; let m;
+  const nomes=new Set();
+  while((m=re.exec(txt))){
+    const nm=m[0];
+    if(txt[re.lastIndex]==='(') continue;
+    if(reservado.has(nm)) continue;
+    nomes.add(nm);
+  }
+  nomes.forEach(nm=>{ if(!params.some(p=>p.name===nm)) params.push({name:nm,value:1,step:0.1}); });
+  renderParams(); renderPad(); run();
+}
+
+$('#algo').innerHTML=
+'<b>BISSECÇÃO</b>\n'+
+'Entrada: f(x), intervalo [a, b], tolerância ε, máximo de iterações N\n'+
+'Se f(a) * f(b) ≥ 0 então\n'+
+'    Erro: não há garantia de raiz no intervalo\n'+
+'FimSe\n'+
+'Para k = 1 até N faça\n'+
+'    c = (a + b) / 2\n'+
+'    Se |f(c)| &lt; ε ou (b - a)/2 &lt; ε então\n'+
+'        Retornar c como raiz\n'+
+'    FimSe\n'+
+'    Se f(a) * f(c) &lt; 0 então  b = c  Senão  a = c  FimSe\n'+
+'FimPara\n\n'+
+'<b>REGULA FALSI</b>\n'+
+'Entrada: f(x), intervalo [a, b], tolerância ε, máximo de iterações N\n'+
+'Se f(a) * f(b) ≥ 0 então\n'+
+'    Erro: não há garantia de raiz\n'+
+'FimSe\n'+
+'Para k = 1 até N faça\n'+
+'    c = (a*f(b) - b*f(a)) / (f(b) - f(a))   # interpolação linear\n'+
+'    Se |f(c)| &lt; ε então\n'+
+'        Retornar c como raiz\n'+
+'    FimSe\n'+
+'    Se f(a) * f(c) &lt; 0 então  b = c  Senão  a = c  FimSe\n'+
+'FimPara\n\n'+
+'<b>NEWTON-RAPHSON</b>\n'+
+'Entrada: f(x), f\u2032(x), chute inicial x0, tolerância ε, máximo de iterações N\n'+
+'x = x0\n'+
+'Para k = 1 até N faça\n'+
+'    Se f\u2032(x) = 0 então\n'+
+'        Erro: derivada nula\n'+
+'    FimSe\n'+
+'    x_novo = x - f(x) / f\u2032(x)\n'+
+'    Se |x_novo - x| &lt; ε ou |f(x_novo)| &lt; ε então\n'+
+'        Retornar x_novo como raiz\n'+
+'    FimSe\n'+
+'    x = x_novo\n'+
+'FimPara\n\n'+
+'<b>SECANTE</b>\n'+
+'Entrada: f(x), chutes iniciais x0, x1, tolerância ε, máximo de iterações N\n'+
+'x_ant = x0\n'+
+'x = x1\n'+
+'Para k = 1 até N faça\n'+
+'    Se f(x) - f(x_ant) = 0 então\n'+
+'        Erro: divisão por zero\n'+
+'    FimSe\n'+
+'    x_novo = x - f(x) * (x - x_ant) / (f(x) - f(x_ant))\n'+
+'    Se |x_novo - x| &lt; ε ou |f(x_novo)| &lt; ε então\n'+
+'        Retornar x_novo como raiz\n'+
+'    FimSe\n'+
+'    x_ant = x\n'+
+'    x = x_novo\n'+
+'FimPara';
+
+/* ---- ligações ---- */
+$('#solve').addEventListener('click',()=>{ ksel=0; run(); });
+$('#preset').addEventListener('change',e=>{ if(e.target.value!=='') aplicarPreset(+e.target.value); });
+$('#addparam').addEventListener('click',()=>{ params.push({name:'p'+(params.length+1),value:1,step:0.1}); renderParams(); renderPad(); });
+$('#detect').addEventListener('click',detectar);
+$('#scan').addEventListener('click',varrer);
+$('#usebrk').addEventListener('click',()=>{ $('#x0').value=$('#a').value; $('#x1').value=$('#b').value; ksel=0; run(); });
+$('#varname').addEventListener('input',()=>{ renderPad(); run(); });
+$('#fx').addEventListener('input',()=>{ clearTimeout(window._d); window._d=setTimeout(()=>{ksel=0;run();},400); });
+$('#fx').addEventListener('change',()=>{ clearTimeout(window._d); ksel=0; run(); });
+['dfx','a','b','x0','x1','tolx','tolf','maxit'].forEach(id=>{
+  $('#'+id).addEventListener('change',()=>{ ksel=0; run(); });
+});
+$('#kslider').addEventListener('input',e=>{
+  ksel=+e.target.value;
+  $('#out').querySelectorAll('tr[data-i]').forEach(t=>t.classList.toggle('sel',+t.dataset.i===ksel));
+  const sel=$('#out').querySelector('tr.sel'); if(sel&&sel.scrollIntoView) sel.scrollIntoView({block:'nearest'});
+  renderLive(); desenharF();
+});
+$('#showgeo').addEventListener('change',desenharF);
+$('#cmpon').addEventListener('change',run);
+$('#erro').addEventListener('change',desenharConv);
+$('#xauto').addEventListener('change',e=>{ $('#xmin').disabled=$('#xmax').disabled=e.target.checked; desenharF(); });
+['xmin','xmax'].forEach(id=>$('#'+id).addEventListener('input',()=>{
+  if($('#xauto').checked){ $('#xauto').checked=false; $('#xmin').disabled=$('#xmax').disabled=false; }
+  desenharF();
+}));
+$('#csv').addEventListener('click',()=>{
+  if(!last||!last.its.length){ alert('Não há iterações para exportar: corrija a função primeiro.'); return; }
+  let csv=colunas().join(',')+'\n';
+  last.its.forEach(r=>{ csv+=linha(r).map(c=>String(c).replace('·10^','E')).join(',')+'\n'; });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='iteracoes_'+method+'.csv'; a.click(); URL.revokeObjectURL(a.href);
+});
+window.addEventListener('resize',()=>{ desenharF(); desenharConv(); });
+
+/* ---- arranque ---- */
+renderMethods(); ajustarCampos(); renderParams(); renderPad(); run();
+</script>
+</body>
+</html>
