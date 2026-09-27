@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fórmulas usuais — modelagem de processos em engenharia</title>
+<style>
+:root{
+  --paper:#eef1f5;
+  --panel:#ffffff;
+  --ink:#16202c;
+  --muted:#5d6b7b;
+  --rule:#ccd5de;
+  --rule-soft:#e3e9ef;
+  --blue:#2f5fd0;
+  --blue-dark:#1f3f92;
+  --amber:#c07600;
+  --green:#0f766e;
+  --purple:#8b2fa0;
+  --red:#b02a1e;
+  --grid:#dde4eb;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  --sans: ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:15px;
+  line-height:1.5;
+  -webkit-text-size-adjust:100%;
+}
+a{color:var(--blue-dark)}
+code{font-family:var(--mono);font-size:12.5px}
+
+/* ---------- cabeçalho ---------- */
+header{
+  border-bottom:1px solid var(--rule);
+  background:
+    linear-gradient(var(--grid) 1px, transparent 1px) 0 0/28px 28px,
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0/28px 28px,
+    #f7f9fb;
+}
+.wrap{max-width:1220px;margin:0 auto;padding:0 20px}
+.head-in{padding:34px 0 28px;display:flex;flex-wrap:wrap;gap:24px;align-items:flex-end;justify-content:space-between}
+h1{
+  font-family:var(--serif);
+  font-weight:600;
+  font-size:clamp(28px,4.4vw,44px);
+  line-height:1.08;
+  margin:0;
+  letter-spacing:-.01em;
+  max-width:16ch;
+}
+h1 em{font-style:normal;display:block;color:var(--blue-dark)}
+.head-note{max-width:44ch;color:var(--muted);margin:0;font-size:14px}
+
+/* navegação entre as páginas do site */
+.nav{display:flex;gap:2px;padding-top:14px;flex-wrap:wrap}
+.nav a{
+  font-size:13.5px;text-decoration:none;color:var(--muted);
+  padding:6px 12px;border:1px solid var(--rule);border-bottom:0;
+  border-radius:4px 4px 0 0;background:#eef1f5;
+}
+.nav a:hover{background:#fff;color:var(--ink)}
+.nav a[aria-current]{background:#fff;color:var(--ink);font-weight:600;box-shadow:inset 0 2px 0 var(--blue)}
+a:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+
+/* ---------- layout ---------- */
+main{padding:26px 0 70px}
+.doc{display:grid;grid-template-columns:230px minmax(0,1fr);gap:22px;align-items:start}
+@media (max-width:960px){.doc{grid-template-columns:minmax(0,1fr)}}
+
+/* índice lateral */
+.toc{position:sticky;top:16px;background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:14px 0 10px;font-size:13.5px}
+.toc p{font-family:var(--serif);font-weight:600;font-size:15px;margin:0 16px 8px}
+.toc ol{list-style:none;margin:0 0 8px;padding:0}
+.toc > ol > li > a{display:block;padding:5px 16px;font-weight:600;color:var(--ink);text-decoration:none}
+.toc ol ol a{display:block;padding:3px 16px 3px 28px;color:var(--muted);text-decoration:none}
+.toc a:hover{background:#f2f5f9;color:var(--ink)}
+@media (max-width:960px){
+  .toc{position:static}
+  .toc > ol{columns:2 220px;column-gap:10px}
+  .toc > ol > li{break-inside:avoid}
+}
+
+/* blocos */
+.card{background:var(--panel);border:1px solid var(--rule);border-radius:6px;margin-bottom:18px;scroll-margin-top:16px}
+.card > h2,.card > h3{
+  font-family:var(--serif);font-weight:600;margin:0;
+  padding:13px 16px;border-bottom:1px solid var(--rule-soft);
+  display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;
+}
+.card > h2{font-size:19px}
+.card > h3{font-size:17px}
+.card > h2 span,.card > h3 span{font-family:var(--sans);font-size:12.5px;font-weight:400;color:var(--muted)}
+.card .body{padding:16px}
+.body > p{margin:0 0 12px;max-width:78ch}
+.body > p:last-child{margin-bottom:0}
+
+/* grupo = uma página da ferramenta */
+.group{scroll-margin-top:16px;margin:30px 0 12px}
+.group:first-of-type{margin-top:0}
+.group h2{font-family:var(--serif);font-weight:600;font-size:clamp(22px,2.6vw,28px);line-height:1.15;margin:0 0 6px}
+.group p{margin:0;color:var(--muted);max-width:78ch}
+.group .tool{font-size:13.5px}
+
+/* método */
+.method{border-left:3px solid var(--blue)}
+.method.amber{border-left-color:var(--amber)}
+.method.green{border-left-color:var(--green)}
+.method.purple{border-left-color:var(--purple)}
+.method .lead{font-size:15px}
+
+pre.algo{font-family:var(--mono);font-size:12.5px;line-height:1.6;background:#f7f9fb;border:1px solid var(--rule);
+  border-radius:4px;padding:11px 13px;overflow-x:auto;margin:0 0 14px}
+pre.algo b{color:var(--blue-dark)}
+
+dl.facts{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:6px 16px;margin:0 0 12px;font-size:13.5px}
+dl.facts dt{color:var(--muted)}
+dl.facts dd{margin:0}
+@media (max-width:560px){
+  dl.facts{grid-template-columns:minmax(0,1fr);gap:0}
+  dl.facts dd{margin-bottom:8px}
+}
+
+.pitfall{background:#fdf7e8;border:1px solid #e6d3a3;border-radius:4px;padding:9px 12px;font-size:13.5px;color:#6b4a00;margin:0 0 12px}
+.pitfall b{color:#5a3e00}
+.go{font-size:13.5px;font-weight:600}
+
+/* tabelas comparativas */
+.scroll-x{overflow-x:auto}
+table.cmp{width:100%;border-collapse:collapse;font-size:13.5px;min-width:620px}
+table.cmp th{text-align:left;font-weight:600;color:var(--muted);font-size:12.5px;padding:0 10px 7px 0;border-bottom:1px solid var(--rule);vertical-align:bottom}
+table.cmp td{padding:7px 10px 7px 0;border-bottom:1px solid var(--rule-soft);vertical-align:top}
+table.cmp tbody tr:last-child td{border-bottom:0}
+table.cmp td:first-child{font-weight:600;white-space:nowrap}
+table.cmp i{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:7px}
+
+/* escolha rápida */
+ol.choose{margin:0;padding:0;list-style:none;counter-reset:q}
+ol.choose > li{counter-increment:q;display:grid;grid-template-columns:28px minmax(0,1fr);gap:4px 10px;padding:10px 0;border-bottom:1px solid var(--rule-soft)}
+ol.choose > li:first-child{padding-top:0}
+ol.choose > li:last-child{border-bottom:0;padding-bottom:0}
+ol.choose > li::before{content:counter(q);font-family:var(--serif);font-weight:600;font-size:17px;color:var(--blue-dark);line-height:1.3}
+ol.choose p{margin:0;grid-column:2}
+ol.choose p + p{color:var(--muted);font-size:13.5px;margin-top:3px}
+
+/* conexões entre os métodos */
+ul.links{margin:0;padding:0;list-style:none}
+ul.links li{padding:9px 0;border-bottom:1px solid var(--rule-soft)}
+ul.links li:first-child{padding-top:0}
+ul.links li:last-child{border-bottom:0;padding-bottom:0}
+ul.links b{font-weight:600}
+
+footer{border-top:1px solid var(--rule);color:var(--muted);font-size:12.5px;padding:16px 0 26px}
+
+@media print{
+  header{background:none}
+  .nav,.toc,.go{display:none}
+  .doc{grid-template-columns:1fr}
+  .card{break-inside:avoid}
+}
+
+/* ---------- notação matemática (sem bibliotecas externas) ---------- */
+.m{font-family:var(--serif);font-size:16.5px;white-space:nowrap;line-height:1.9}
+.m i{font-style:italic}
+.fr{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 2px;line-height:1.25}
+.fr > span{padding:0 3px}
+.fr > span:first-child{border-bottom:1px solid currentColor}
+.int{display:inline-flex;align-items:center;vertical-align:middle;margin:0 1px}
+.int > .s{font-size:1.55em;line-height:1;font-weight:300}
+.int > .lim{display:inline-flex;flex-direction:column;justify-content:space-between;font-size:.66em;line-height:1.05;margin-left:1px;height:2.5em}
+.sq{white-space:nowrap}
+.sq > span{border-top:1px solid currentColor;padding:0 2px 0 1px}
+
+.eqs{display:grid;grid-template-columns:minmax(0,1fr);gap:2px;margin:0 0 14px}
+.eq{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,38%);gap:4px 18px;align-items:center;
+  padding:8px 12px;background:#f7f9fb;border:1px solid var(--rule-soft);border-radius:4px}
+.eq .m{white-space:normal}
+.fr,.int,.sq,sub,sup{white-space:nowrap}
+table.f.lap td:first-child{color:var(--ink);font-size:inherit}
+.eq .note{font-size:13px;color:var(--muted)}
+.eq.key{background:#eef3fd;border-color:#c7d5f3}
+@media (max-width:700px){.eq{grid-template-columns:minmax(0,1fr)}}
+
+table.f{width:100%;border-collapse:collapse;font-size:13.5px;min-width:660px}
+table.f th{text-align:left;font-weight:600;color:var(--muted);font-size:12.5px;padding:0 12px 7px 0;border-bottom:1px solid var(--rule);vertical-align:bottom}
+table.f td{padding:6px 12px 6px 0;border-bottom:1px solid var(--rule-soft);vertical-align:middle}
+table.f tbody tr:last-child td{border-bottom:0}
+table.f td:first-child{color:var(--muted);font-size:13px;max-width:17ch}
+table.f td .m{font-size:15.5px}
+table.f thead th:not(:first-child){color:var(--ink);font-family:var(--serif);font-size:15px}
+.sub-h{font-family:var(--serif);font-weight:600;font-size:15.5px;margin:18px 0 8px}
+.sub-h:first-child{margin-top:0}
+.units{font-size:13px;color:var(--muted);margin:0 0 12px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="head-in">
+      <h1>Fórmulas usuais<em>para montar e resolver modelos</em></h1>
+      <p class="head-note">Leis constitutivas de circuitos (em corrente e em carga), transferência de calor, balanços de conservação, tanques, reatores e as ferramentas para resolver as EDOs resultantes. Blocos em azul claro marcam a forma mais usada de cada grupo.</p>
+    </div>
+    <nav class="nav">
+      <a href="index.html">Sistemas lineares</a>
+      <a href="nao-lineares.html">Equações não-lineares</a>
+      <a href="sistemas-nao-lineares.html">Sistemas não-lineares</a>
+      <a href="resumo.html">Resumo dos métodos</a>
+      <a href="formulas.html" aria-current="page">Fórmulas</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+<div class="doc">
+
+<nav class="toc" aria-label="Índice da página">
+  <p>Nesta página</p>
+  <ol>
+    <li><a href="#circuitos">Circuitos elétricos</a>
+      <ol>
+        <li><a href="#rlc-elementos">R, L e C em i e q</a></li>
+        <li><a href="#rlc-circuitos">EDO do circuito</a></li>
+      </ol>
+    </li>
+    <li><a href="#calor">Transferência de calor</a>
+      <ol>
+        <li><a href="#mecanismos">Condução, convecção, radiação</a></li>
+        <li><a href="#resistencias">Circuito térmico</a></li>
+        <li><a href="#transiente">Transiente</a></li>
+      </ol>
+    </li>
+    <li><a href="#balancos">Balanços e modelos</a>
+      <ol>
+        <li><a href="#balanco-geral">Massa, componente, energia</a></li>
+        <li><a href="#tanques">Tanques e escoamento</a></li>
+        <li><a href="#mecanicos">Sistemas mecânicos</a></li>
+        <li><a href="#analogias">Analogias entre domínios</a></li>
+        <li><a href="#reacoes">Cinética e reatores</a></li>
+      </ol>
+    </li>
+    <li><a href="#dinamica">Resolvendo o modelo</a>
+      <ol>
+        <li><a href="#linearizacao">Linearização</a></li>
+        <li><a href="#ordens">1ª e 2ª ordem</a></li>
+        <li><a href="#laplace">Laplace</a></li>
+        <li><a href="#edo-numerica">EDOs numéricas</a></li>
+      </ol>
+    </li>
+    <li><a href="#constantes">Constantes e conversões</a></li>
+  </ol>
+</nav>
+
+<div>
+
+<div class="group" id="circuitos">
+  <h2>Circuitos elétricos</h2>
+  <p>Resistor, capacitor e indutor escritos em função da corrente <i>i</i> e da carga <i>q</i>. A ligação entre as duas é <b>i = dq/dt</b>: a corrente é a taxa com que a carga passa pelo elemento.</p>
+</div>
+
+<section class="card method" id="rlc-elementos">
+  <h3>Relações tensão–corrente–carga <span>convenção passiva</span></h3>
+  <div class="body">
+    <div class="eqs"><div class="eq key"><span class="m"><i>i</i>(<i>t</i>) = <span class="fr"><span>d<i>q</i></span><span>dt</span></span> &nbsp;&nbsp;⇔&nbsp;&nbsp; <i>q</i>(<i>t</i>) = <span class="int"><span class="s">∫</span><span class="lim"><span><i>t</i></span><span>−∞</span></span></span><i>i</i>(τ) dτ = <i>q</i>(0) + <span class="int"><span class="s">∫</span><span class="lim"><span><i>t</i></span><span>0</span></span></span><i>i</i>(τ) dτ</span><span class="note">definição que liga as duas formulações</span></div></div>
+    <div class="scroll-x">
+    <table class="f">
+      <thead><tr><th></th><th>Resistor</th><th>Capacitor</th><th>Indutor</th></tr></thead>
+      <tbody>
+        <tr><td>Tensão em função de i</td>
+          <td><span class="m"><i>v</i> = <i>R i</i></span></td>
+          <td><span class="m"><i>v</i> = <span class="fr"><span>1</span><span><i>C</i></span></span><span class="int"><span class="s">∫</span><span class="lim"><span><i>t</i></span><span>−∞</span></span></span><i>i</i>(τ) dτ</span></td>
+          <td><span class="m"><i>v</i> = <i>L</i> <span class="fr"><span>d<i>i</i></span><span>dt</span></span></span></td></tr>
+        <tr><td>Corrente em função de v</td>
+          <td><span class="m"><i>i</i> = <span class="fr"><span><i>v</i></span><span><i>R</i></span></span></span></td>
+          <td><span class="m"><i>i</i> = <i>C</i> <span class="fr"><span>d<i>v</i></span><span>dt</span></span></span></td>
+          <td><span class="m"><i>i</i> = <span class="fr"><span>1</span><span><i>L</i></span></span><span class="int"><span class="s">∫</span><span class="lim"><span><i>t</i></span><span>−∞</span></span></span><i>v</i>(τ) dτ</span></td></tr>
+        <tr><td>Tensão em função de q</td>
+          <td><span class="m"><i>v</i> = <i>R</i> <span class="fr"><span>d<i>q</i></span><span>dt</span></span></span></td>
+          <td><span class="m"><i>v</i> = <span class="fr"><span><i>q</i></span><span><i>C</i></span></span></span></td>
+          <td><span class="m"><i>v</i> = <i>L</i> <span class="fr"><span>d<sup>2</sup><i>q</i></span><span>dt<sup>2</sup></span></span></span></td></tr>
+        <tr><td>Grandeza associada</td>
+          <td><span class="m"><i>q</i> = ∫<i>i</i> dt</span> <span class="units">(carga que atravessa)</span></td>
+          <td><span class="m"><i>q</i> = <i>C v</i></span> <span class="units">(carga armazenada)</span></td>
+          <td><span class="m">λ = <i>L i</i>, &nbsp;<i>v</i> = <span class="fr"><span>dλ</span><span>dt</span></span></span> <span class="units">(fluxo concatenado)</span></td></tr>
+        <tr><td>Energia / potência</td>
+          <td><span class="m"><i>p</i> = <i>R i</i><sup>2</sup> = <span class="fr"><span><i>v</i><sup>2</sup></span><span><i>R</i></span></span></span> <span class="units">(dissipa)</span></td>
+          <td><span class="m"><i>W</i> = ½<i>C v</i><sup>2</sup> = <span class="fr"><span><i>q</i><sup>2</sup></span><span>2<i>C</i></span></span></span></td>
+          <td><span class="m"><i>W</i> = ½<i>L i</i><sup>2</sup></span></td></tr>
+        <tr><td>Impedância Z(s)</td>
+          <td><span class="m"><i>R</i></span></td>
+          <td><span class="m"><span class="fr"><span>1</span><span><i>C s</i></span></span></span></td>
+          <td><span class="m"><i>L s</i></span></td></tr>
+        <tr><td>Regime permanente CC</td>
+          <td>resistor</td><td>circuito aberto (<i>i</i> = 0)</td><td>curto-circuito (<i>v</i> = 0)</td></tr>
+        <tr><td>Não pode saltar</td>
+          <td>—</td><td><i>v<sub>C</sub></i> (e <i>q</i>)</td><td><i>i<sub>L</sub></i></td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="units">Unidades: R [Ω], C [F], L [H], q [C], λ [Wb]. Com condição inicial: <span class="m"><i>v<sub>C</sub></i>(<i>t</i>) = <i>v<sub>C</sub></i>(0) + <span class="fr"><span>1</span><span><i>C</i></span></span><span class="int"><span class="s">∫</span><span class="lim"><span><i>t</i></span><span>0</span></span></span><i>i</i> dτ</span> e <span class="m"><i>i<sub>L</sub></i>(<i>t</i>) = <i>i<sub>L</sub></i>(0) + <span class="fr"><span>1</span><span><i>L</i></span></span><span class="int"><span class="s">∫</span><span class="lim"><span><i>t</i></span><span>0</span></span></span><i>v</i> dτ</span>.</p>
+  </div>
+</section>
+
+<section class="card method" id="rlc-circuitos">
+  <h3>Montando a EDO do circuito <span>Kirchhoff</span></h3>
+  <div class="body">
+    <div class="eqs"><div class="eq"><span class="m">Σ <i>v</i> = 0 &nbsp;(em cada malha) &nbsp;&nbsp;·&nbsp;&nbsp; Σ <i>i</i> = 0 &nbsp;(em cada nó)</span><span class="note">LTK e LCK</span></div></div>
+    <p class="sub-h">RLC série com fonte de tensão v<sub>s</sub>(t)</p>
+    <div class="eqs"><div class="eq"><span class="m"><i>L</i> <span class="fr"><span>d<i>i</i></span><span>dt</span></span> + <i>R i</i> + <span class="fr"><span>1</span><span><i>C</i></span></span><span class="int"><span class="s">∫</span><span class="lim"><span><i>t</i></span><span>−∞</span></span></span><i>i</i> dτ = <i>v<sub>s</sub></i>(<i>t</i>)</span><span class="note">em i: equação íntegro-diferencial</span></div><div class="eq key"><span class="m"><i>L</i> <span class="fr"><span>d<sup>2</sup><i>q</i></span><span>dt<sup>2</sup></span></span> + <i>R</i> <span class="fr"><span>d<i>q</i></span><span>dt</span></span> + <span class="fr"><span><i>q</i></span><span><i>C</i></span></span> = <i>v<sub>s</sub></i>(<i>t</i>)</span><span class="note">em q: EDO de 2ª ordem, sem integral — em geral a forma mais cômoda</span></div><div class="eq"><span class="m"><i>L</i> <span class="fr"><span>d<sup>2</sup><i>i</i></span><span>dt<sup>2</sup></span></span> + <i>R</i> <span class="fr"><span>d<i>i</i></span><span>dt</span></span> + <span class="fr"><span><i>i</i></span><span><i>C</i></span></span> = <span class="fr"><span>d<i>v<sub>s</sub></i></span><span>dt</span></span></span><span class="note">em i, derivando a primeira</span></div><div class="eq"><span class="m"><i>LC</i> <span class="fr"><span>d<sup>2</sup><i>v<sub>C</sub></i></span><span>dt<sup>2</sup></span></span> + <i>RC</i> <span class="fr"><span>d<i>v<sub>C</sub></i></span><span>dt</span></span> + <i>v<sub>C</sub></i> = <i>v<sub>s</sub></i></span><span class="note">em v<sub>C</sub> = q/C</span></div></div>
+    <p class="sub-h">RLC paralelo com fonte de corrente i<sub>s</sub>(t)</p>
+    <div class="eqs"><div class="eq"><span class="m"><i>C</i> <span class="fr"><span>d<i>v</i></span><span>dt</span></span> + <span class="fr"><span><i>v</i></span><span><i>R</i></span></span> + <span class="fr"><span>1</span><span><i>L</i></span></span><span class="int"><span class="s">∫</span><span class="lim"><span><i>t</i></span><span>−∞</span></span></span><i>v</i> dτ = <i>i<sub>s</sub></i>(<i>t</i>)</span><span class="note">em v (dual do série)</span></div><div class="eq"><span class="m"><i>C</i> <span class="fr"><span>d<sup>2</sup>λ</span><span>dt<sup>2</sup></span></span> + <span class="fr"><span>1</span><span><i>R</i></span></span><span class="fr"><span>dλ</span><span>dt</span></span> + <span class="fr"><span>λ</span><span><i>L</i></span></span> = <i>i<sub>s</sub></i>(<i>t</i>)</span><span class="note">em λ, com v = dλ/dt (papel análogo ao de q)</span></div></div>
+    <p class="sub-h">Circuitos de 1ª ordem</p>
+    <div class="eqs"><div class="eq"><span class="m"><i>RC</i> <span class="fr"><span>d<i>v<sub>C</sub></i></span><span>dt</span></span> + <i>v<sub>C</sub></i> = <i>v<sub>s</sub></i> &nbsp;&nbsp;⇔&nbsp;&nbsp; <i>R</i> <span class="fr"><span>d<i>q</i></span><span>dt</span></span> + <span class="fr"><span><i>q</i></span><span><i>C</i></span></span> = <i>v<sub>s</sub></i></span><span class="note">RC série · τ = RC</span></div><div class="eq"><span class="m"><i>L</i> <span class="fr"><span>d<i>i</i></span><span>dt</span></span> + <i>R i</i> = <i>v<sub>s</sub></i></span><span class="note">RL série · τ = L/R</span></div><div class="eq key"><span class="m"><i>x</i>(<i>t</i>) = <i>x</i><sub>∞</sub> + [<i>x</i>(0) − <i>x</i><sub>∞</sub>] e<sup>−<i>t</i>/τ</sup></span><span class="note">solução para entrada constante — vale para v<sub>C</sub>, q ou i<sub>L</sub></span></div></div>
+    <p class="pitfall"><b>Cuidado:</b> a relação é <b>i = dq/dt</b>, não di/dt. Ao trocar i por q, cada ∫i dt vira q e cada di/dt vira d²q/dt² — a ordem da EDO sobe onde havia derivada e a integral some.</p>
+  </div>
+</section>
+
+<div class="group" id="calor">
+  <h2>Transferência de calor</h2>
+  <p>Condução, convecção e radiação, a forma de resistência térmica de cada uma e o balanço transiente de um corpo. <i>q</i> aqui é taxa de calor [W], não carga.</p>
+</div>
+
+<section class="card method amber" id="mecanismos">
+  <h3>Os três mecanismos</h3>
+  <div class="body">
+    <div class="scroll-x">
+    <table class="f">
+      <thead><tr><th></th><th>Lei</th><th>Taxa de calor</th><th>Resistência térmica</th></tr></thead>
+      <tbody>
+        <tr><td>Condução (geral)</td><td>Fourier</td>
+          <td><span class="m"><i>q</i> = −<i>k A</i> <span class="fr"><span>d<i>T</i></span><span>d<i>x</i></span></span></span></td><td>—</td></tr>
+        <tr><td>Condução — parede plana</td><td>Fourier</td>
+          <td><span class="m"><i>q</i> = <i>k A</i> <span class="fr"><span><i>T</i><sub>1</sub> − <i>T</i><sub>2</sub></span><span><i>L</i></span></span></span></td>
+          <td><span class="m"><i>R</i> = <span class="fr"><span><i>L</i></span><span><i>k A</i></span></span></span></td></tr>
+        <tr><td>Condução — cilindro (tubo)</td><td>Fourier</td>
+          <td><span class="m"><i>q</i> = <span class="fr"><span>2π<i>k L</i> (<i>T</i><sub>1</sub> − <i>T</i><sub>2</sub>)</span><span>ln(<i>r</i><sub>2</sub>/<i>r</i><sub>1</sub>)</span></span></span></td>
+          <td><span class="m"><i>R</i> = <span class="fr"><span>ln(<i>r</i><sub>2</sub>/<i>r</i><sub>1</sub>)</span><span>2π<i>k L</i></span></span></span></td></tr>
+        <tr><td>Condução — esfera</td><td>Fourier</td>
+          <td><span class="m"><i>q</i> = <span class="fr"><span><i>T</i><sub>1</sub> − <i>T</i><sub>2</sub></span><span><i>R</i></span></span></span></td>
+          <td><span class="m"><i>R</i> = <span class="fr"><span><i>r</i><sub>2</sub> − <i>r</i><sub>1</sub></span><span>4π<i>k r</i><sub>1</sub><i>r</i><sub>2</sub></span></span></span></td></tr>
+        <tr><td>Convecção</td><td>Resfriamento de Newton</td>
+          <td><span class="m"><i>q</i> = <i>h A</i> (<i>T<sub>s</sub></i> − <i>T</i><sub>∞</sub>)</span></td>
+          <td><span class="m"><i>R</i> = <span class="fr"><span>1</span><span><i>h A</i></span></span></span></td></tr>
+        <tr><td>Radiação</td><td>Stefan-Boltzmann</td>
+          <td><span class="m"><i>q</i> = ε σ <i>A</i> (<i>T<sub>s</sub></i><sup>4</sup> − <i>T</i><sub>viz</sub><sup>4</sup>)</span></td>
+          <td><span class="m"><i>R</i> = <span class="fr"><span>1</span><span><i>h<sub>r</sub> A</i></span></span></span></td></tr>
+      </tbody>
+    </table>
+    </div>
+    <div class="eqs"><div class="eq"><span class="m"><i>h<sub>r</sub></i> = ε σ (<i>T<sub>s</sub></i> + <i>T</i><sub>viz</sub>)(<i>T<sub>s</sub></i><sup>2</sup> + <i>T</i><sub>viz</sub><sup>2</sup>)</span><span class="note">coeficiente de radiação: permite tratar a radiação como resistência</span></div><div class="eq"><span class="m"><i>E<sub>b</sub></i> = σ <i>T</i><sup>4</sup></span><span class="note">poder emissivo do corpo negro [W/m²]</span></div></div>
+    <p class="units">k [W/(m·K)] · h [W/(m²·K)] · σ = 5,67 × 10<sup>−8</sup> W/(m²·K⁴) · 0 ≤ ε ≤ 1</p>
+    <p class="pitfall"><b>Radiação exige kelvin.</b> Em condução e convecção só entra diferença de temperatura (°C e K dão o mesmo), mas T⁴ com °C dá resultado errado.</p>
+  </div>
+</section>
+
+<section class="card method amber" id="resistencias">
+  <h3>Circuito térmico <span>análogo à lei de Ohm</span></h3>
+  <div class="body">
+    <div class="eqs"><div class="eq key"><span class="m"><i>q</i> = <span class="fr"><span>Δ<i>T</i><sub>total</sub></span><span>Σ<i>R</i></span></span></span><span class="note">ΔT ↔ tensão · q ↔ corrente · R<sub>t</sub> ↔ resistência</span></div><div class="eq"><span class="m"><i>R</i><sub>série</sub> = <i>R</i><sub>1</sub> + <i>R</i><sub>2</sub> + … &nbsp;&nbsp;·&nbsp;&nbsp; <span class="fr"><span>1</span><span><i>R</i><sub>paralelo</sub></span></span> = <span class="fr"><span>1</span><span><i>R</i><sub>1</sub></span></span> + <span class="fr"><span>1</span><span><i>R</i><sub>2</sub></span></span> + …</span><span class="note">camadas em série; caminhos lado a lado em paralelo</span></div><div class="eq"><span class="m"><i>R</i><sub>tot</sub> = <span class="fr"><span>1</span><span><i>h<sub>i</sub> A</i></span></span> + <span class="fr"><span><i>L</i></span><span><i>k A</i></span></span> + <span class="fr"><span>1</span><span><i>h<sub>e</sub> A</i></span></span></span><span class="note">parede entre dois fluidos</span></div><div class="eq"><span class="m"><i>q</i> = <i>U A</i> Δ<i>T</i>, &nbsp;&nbsp; <i>U A</i> = <span class="fr"><span>1</span><span>Σ<i>R</i></span></span></span><span class="note">coeficiente global U — usado em camisas e serpentinas</span></div></div>
+  </div>
+</section>
+
+<section class="card method amber" id="transiente">
+  <h3>Calor armazenado e aquecimento transiente</h3>
+  <div class="body">
+    <div class="eqs"><div class="eq"><span class="m"><i>Q</i> = <i>m c<sub>p</sub></i> Δ<i>T</i></span><span class="note">calor sensível [J]</span></div><div class="eq"><span class="m"><i>Q</i> = <i>m</i> λ</span><span class="note">calor latente (mudança de fase), λ em J/kg</span></div><div class="eq key"><span class="m">ρ <i>V c<sub>p</sub></i> <span class="fr"><span>d<i>T</i></span><span>dt</span></span> = <i>h A</i> (<i>T</i><sub>∞</sub> − <i>T</i>)</span><span class="note">capacitância concentrada: corpo com T uniforme</span></div><div class="eq"><span class="m"><i>T</i>(<i>t</i>) = <i>T</i><sub>∞</sub> + (<i>T</i><sub>0</sub> − <i>T</i><sub>∞</sub>) e<sup>−<i>t</i>/τ</sup>, &nbsp;&nbsp; τ = <span class="fr"><span>ρ<i>V c<sub>p</sub></i></span><span><i>h A</i></span></span> = <i>R<sub>t</sub> C<sub>t</sub></i></span><span class="note">mesma forma do circuito RC</span></div><div class="eq"><span class="m">Bi = <span class="fr"><span><i>h L<sub>c</sub></i></span><span><i>k</i></span></span> &lt; 0,1, &nbsp;&nbsp; <i>L<sub>c</sub></i> = <span class="fr"><span><i>V</i></span><span><i>A</i></span></span></span><span class="note">condição para usar capacitância concentrada</span></div></div>
+  </div>
+</section>
+
+<div class="group" id="balancos">
+  <h2>Balanços de conservação</h2>
+  <p>Ponto de partida de quase todo modelo de processo. Os termos da EDO saem diretamente da frase abaixo.</p>
+</div>
+
+<section class="card method green" id="balanco-geral">
+  <h3>Massa, componente e energia</h3>
+  <div class="body">
+    <div class="eqs"><div class="eq key"><span class="m">Acúmulo = Entrada − Saída + Geração − Consumo</span><span class="note">para qualquer grandeza conservada, por unidade de tempo</span></div><div class="eq"><span class="m"><span class="fr"><span>d(ρ<i>V</i>)</span><span>dt</span></span> = ρ<sub>e</sub><i>q<sub>e</sub></i> − ρ<i>q</i></span><span class="note">massa total (q = vazão volumétrica)</span></div><div class="eq"><span class="m"><i>A</i> <span class="fr"><span>d<i>h</i></span><span>dt</span></span> = <i>q<sub>e</sub></i> − <i>q</i></span><span class="note">massa, ρ constante, tanque de seção A</span></div><div class="eq"><span class="m"><span class="fr"><span>d(<i>V C<sub>A</sub></i>)</span><span>dt</span></span> = <i>q<sub>e</sub> C<sub>Ae</sub></i> − <i>q C<sub>A</sub></i> − <i>V r<sub>A</sub></i></span><span class="note">componente A, com r<sub>A</sub> = taxa de consumo por volume</span></div><div class="eq"><span class="m">ρ <i>c<sub>p</sub></i> <span class="fr"><span>d(<i>V T</i>)</span><span>dt</span></span> = ρ <i>c<sub>p</sub></i> (<i>q<sub>e</sub> T<sub>e</sub></i> − <i>q T</i>) + <i>Q</i> + (−Δ<i>H<sub>R</sub></i>) <i>r V</i></span><span class="note">energia, líquido com ρ e c<sub>p</sub> constantes, sem trabalho de eixo</span></div><div class="eq"><span class="m"><i>Q</i> = <i>U A</i> (<i>T<sub>c</sub></i> − <i>T</i>)</span><span class="note">calor trocado com camisa/serpentina a T<sub>c</sub></span></div><div class="eq"><span class="m"><i>N</i><sub>GL</sub> = <i>N</i><sub>variáveis</sub> − <i>N</i><sub>equações</sub></span><span class="note">graus de liberdade: o modelo fecha quando N<sub>GL</sub> = 0 (após fixar as entradas)</span></div></div>
+  </div>
+</section>
+
+<section class="card method green" id="tanques">
+  <h3>Tanques e escoamento</h3>
+  <div class="body">
+    <div class="eqs"><div class="eq"><span class="m"><i>q</i> = <i>h</i> / <i>R</i></span><span class="note">saída linear (restrição/válvula linear)</span></div><div class="eq"><span class="m"><i>q</i> = <i>C<sub>d</sub> a</i> <span class="sq">√<span>2<i>g h</i></span></span> = β <span class="sq">√<span><i>h</i></span></span></span><span class="note">saída por gravidade (Torricelli) — não-linear</span></div><div class="eq key"><span class="m"><i>A</i> <span class="fr"><span>d<i>h</i></span><span>dt</span></span> = <i>q<sub>e</sub></i> − β <span class="sq">√<span><i>h</i></span></span></span><span class="note">tanque com descarga livre</span></div><div class="eq"><span class="m"><i>t</i> = <span class="fr"><span>2<i>A</i> (<span class="sq">√<span><i>h</i><sub>0</sub></span></span> − <span class="sq">√<span><i>h</i></span></span>)</span><span>β</span></span></span><span class="note">tempo de esvaziamento de h<sub>0</sub> até h (q<sub>e</sub> = 0)</span></div><div class="eq"><span class="m"><i>A</i><sub>1</sub> <span class="fr"><span>d<i>h</i><sub>1</sub></span><span>dt</span></span> = <i>q<sub>e</sub></i> − <span class="fr"><span><i>h</i><sub>1</sub></span><span><i>R</i><sub>1</sub></span></span>, &nbsp;&nbsp; <i>A</i><sub>2</sub> <span class="fr"><span>d<i>h</i><sub>2</sub></span><span>dt</span></span> = <span class="fr"><span><i>h</i><sub>1</sub></span><span><i>R</i><sub>1</sub></span></span> − <span class="fr"><span><i>h</i><sub>2</sub></span><span><i>R</i><sub>2</sub></span></span></span><span class="note">dois tanques em série, não-interagentes</span></div><div class="eq"><span class="m"><i>q</i><sub>12</sub> = <span class="fr"><span><i>h</i><sub>1</sub> − <i>h</i><sub>2</sub></span><span><i>R</i><sub>1</sub></span></span></span><span class="note">tanques interagentes (vazão depende dos dois níveis)</span></div><div class="eq"><span class="m"><i>P</i> = <i>P</i><sub>atm</sub> + ρ <i>g h</i> &nbsp;&nbsp;·&nbsp;&nbsp; <i>w</i> = ρ <i>q</i></span><span class="note">pressão hidrostática · vazão mássica</span></div><div class="eq"><span class="m"><i>P</i><sub>1</sub> + ½ρ<i>u</i><sub>1</sub><sup>2</sup> + ρ<i>g z</i><sub>1</sub> = <i>P</i><sub>2</sub> + ½ρ<i>u</i><sub>2</sub><sup>2</sup> + ρ<i>g z</i><sub>2</sub></span><span class="note">Bernoulli (sem atrito, incompressível)</span></div></div>
+  </div>
+</section>
+
+<section class="card method green" id="mecanicos">
+  <h3>Sistemas mecânicos</h3>
+  <div class="body">
+    <div class="eqs"><div class="eq"><span class="m">Σ<i>F</i> = <i>m a</i> &nbsp;·&nbsp; <i>F<sub>mola</sub></i> = <i>k x</i> &nbsp;·&nbsp; <i>F<sub>amort</sub></i> = <i>b ẋ</i></span><span class="note">Newton, mola, amortecedor viscoso</span></div><div class="eq key"><span class="m"><i>m</i> <span class="fr"><span>d<sup>2</sup><i>x</i></span><span>dt<sup>2</sup></span></span> + <i>b</i> <span class="fr"><span>d<i>x</i></span><span>dt</span></span> + <i>k x</i> = <i>F</i>(<i>t</i>)</span><span class="note">massa-mola-amortecedor — mesma forma do RLC série em q</span></div><div class="eq"><span class="m"><i>J</i> <span class="fr"><span>d<sup>2</sup>θ</span><span>dt<sup>2</sup></span></span> + <i>B</i> <span class="fr"><span>dθ</span><span>dt</span></span> + <i>K</i> θ = τ(<i>t</i>)</span><span class="note">rotação: inércia, atrito viscoso, mola torcional</span></div><div class="eq"><span class="m"><span class="fr"><span>d<sup>2</sup>θ</span><span>dt<sup>2</sup></span></span> + <span class="fr"><span><i>g</i></span><span>ℓ</span></span> sen θ = 0</span><span class="note">pêndulo simples (linearizado: sen θ ≈ θ)</span></div></div>
+  </div>
+</section>
+
+<section class="card method purple" id="analogias">
+  <h3>Analogias entre domínios</h3>
+  <div class="body">
+    <p>Os mesmos três tipos de elemento aparecem em todo domínio. Reconhecer o papel de cada termo permite reaproveitar a solução de um sistema em outro.</p>
+    <div class="scroll-x">
+    <table class="f">
+      <thead><tr><th></th><th>Elétrico</th><th>Mecânico</th><th>Rotação</th><th>Térmico</th><th>Hidráulico</th></tr></thead>
+      <tbody>
+        <tr><td>Esforço</td><td>v</td><td>F</td><td>τ</td><td>ΔT</td><td>h (ou ΔP)</td></tr>
+        <tr><td>Fluxo</td><td>i</td><td>ẋ</td><td>ω</td><td>q [W]</td><td>q [m³/s]</td></tr>
+        <tr><td>Acumulado (∫ fluxo)</td><td>q</td><td>x</td><td>θ</td><td>Q [J]</td><td>V</td></tr>
+        <tr><td>Resistência</td><td>R</td><td>b</td><td>B</td><td>R<sub>t</sub></td><td>R<sub>h</sub></td></tr>
+        <tr><td>Capacitância</td><td>C</td><td>1/k</td><td>1/K</td><td>m c<sub>p</sub></td><td>A (seção do tanque)</td></tr>
+        <tr><td>Inércia</td><td>L</td><td>m</td><td>J</td><td>não existe</td><td>ρℓ/A<sub>tubo</sub> (em ΔP)</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="units">Analogia força–tensão. Por isso sistemas térmicos simples são sempre de 1ª ordem por elemento: não há inércia térmica que produza oscilação.</p>
+  </div>
+</section>
+
+<section class="card method green" id="reacoes">
+  <h3>Cinética e reatores</h3>
+  <div class="body">
+    <div class="eqs"><div class="eq"><span class="m"><i>r<sub>A</sub></i> = <i>k C<sub>A</sub><sup>n</sup></i></span><span class="note">lei de potência, ordem n</span></div><div class="eq key"><span class="m"><i>k</i> = <i>k</i><sub>0</sub> exp(<span class="fr"><span>−<i>E<sub>a</sub></i></span><span><i>R T</i></span></span>)</span><span class="note">Arrhenius</span></div><div class="eq"><span class="m">ln <span class="fr"><span><i>k</i><sub>2</sub></span><span><i>k</i><sub>1</sub></span></span> = −<span class="fr"><span><i>E<sub>a</sub></i></span><span><i>R</i></span></span> (<span class="fr"><span>1</span><span><i>T</i><sub>2</sub></span></span> − <span class="fr"><span>1</span><span><i>T</i><sub>1</sub></span></span>)</span><span class="note">E<sub>a</sub> a partir de duas temperaturas</span></div><div class="eq"><span class="m"><span class="fr"><span>d<i>C<sub>A</sub></i></span><span>dt</span></span> = −<i>k C<sub>A</sub><sup>n</sup></i></span><span class="note">batelada</span></div><div class="eq"><span class="m">n = 0: <i>C<sub>A</sub></i> = <i>C<sub>A0</sub></i> − <i>k t</i> &nbsp;·&nbsp; n = 1: <i>C<sub>A</sub></i> = <i>C<sub>A0</sub></i> e<sup>−<i>kt</i></sup> &nbsp;·&nbsp; n = 2: 1/<i>C<sub>A</sub></i> = 1/<i>C<sub>A0</sub></i> + <i>k t</i></span><span class="note">soluções da batelada; t<sub>½</sub> = ln 2 / k (1ª ordem)</span></div><div class="eq"><span class="m"><i>C<sub>A</sub></i> = <span class="fr"><span><i>C<sub>A0</sub></i></span><span>1 + <i>k</i>τ</span></span> (CSTR) &nbsp;·&nbsp; <i>C<sub>A</sub></i> = <i>C<sub>A0</sub></i> e<sup>−<i>k</i>τ</sup> (PFR), &nbsp; τ = <i>V</i>/<i>q</i></span><span class="note">1ª ordem, regime permanente</span></div><div class="eq"><span class="m"><i>X</i> = <span class="fr"><span><i>C<sub>A0</sub></i> − <i>C<sub>A</sub></i></span><span><i>C<sub>A0</sub></i></span></span></span><span class="note">conversão</span></div><div class="eq"><span class="m"><i>P V</i> = <i>n R T</i></span><span class="note">gás ideal</span></div></div>
+  </div>
+</section>
+
+<div class="group" id="dinamica">
+  <h2>Resolvendo o modelo</h2>
+  <p>Linearização, formas padrão de 1ª e 2ª ordem, Laplace e integração numérica.</p>
+</div>
+
+<section class="card method" id="linearizacao">
+  <h3>Linearização em torno de um ponto de operação <span>Taylor de 1ª ordem</span></h3>
+  <div class="body">
+    <div class="eqs"><div class="eq key"><span class="m"><i>f</i>(<i>x</i>) ≈ <i>f</i>(<i>x̄</i>) + <i>f</i>′(<i>x̄</i>) (<i>x</i> − <i>x̄</i>)</span><span class="note">uma variável</span></div><div class="eq"><span class="m"><i>f</i>(<i>x</i>,<i>y</i>) ≈ <i>f</i>(<i>x̄</i>,<i>ȳ</i>) + <span class="fr"><span>∂<i>f</i></span><span>∂<i>x</i></span></span>|<sub>ss</sub>(<i>x</i> − <i>x̄</i>) + <span class="fr"><span>∂<i>f</i></span><span>∂<i>y</i></span></span>|<sub>ss</sub>(<i>y</i> − <i>ȳ</i>)</span><span class="note">duas variáveis (derivadas no estado estacionário)</span></div><div class="eq"><span class="m"><i>x′</i> = <i>x</i> − <i>x̄</i></span><span class="note">variável-desvio: o termo de estado estacionário se cancela e as CI viram zero</span></div><div class="eq"><span class="m"><span class="sq">√<span><i>h</i></span></span> ≈ <span class="sq">√<span><i>h̄</i></span></span> + <span class="fr"><span><i>h</i> − <i>h̄</i></span><span>2<span class="sq">√<span><i>h̄</i></span></span></span></span> &nbsp;⇒&nbsp; <i>R</i><sub>lin</sub> = <span class="fr"><span>2<i>h̄</i></span><span><i>q̄</i></span></span></span><span class="note">tanque de Torricelli</span></div><div class="eq"><span class="m"><i>T</i><sup>4</sup> ≈ <i>T̄</i><sup>4</sup> + 4<i>T̄</i><sup>3</sup>(<i>T</i> − <i>T̄</i>)</span><span class="note">radiação</span></div><div class="eq"><span class="m">e<sup>−<i>E</i>/<i>RT</i></sup> ≈ e<sup>−<i>E</i>/<i>RT̄</i></sup> [1 + <span class="fr"><span><i>E</i></span><span><i>R T̄</i><sup>2</sup></span></span>(<i>T</i> − <i>T̄</i>)]</span><span class="note">Arrhenius</span></div></div>
+  </div>
+</section>
+
+<section class="card method" id="ordens">
+  <h3>Sistemas de 1ª e 2ª ordem</h3>
+  <div class="body">
+    <p class="sub-h">1ª ordem</p>
+    <div class="eqs"><div class="eq key"><span class="m">τ <span class="fr"><span>d<i>y</i></span><span>dt</span></span> + <i>y</i> = <i>K u</i>(<i>t</i>) &nbsp;&nbsp;⇔&nbsp;&nbsp; <i>G</i>(<i>s</i>) = <span class="fr"><span><i>K</i></span><span>τ<i>s</i> + 1</span></span></span><span class="note">forma padrão: K = ganho, τ = constante de tempo</span></div><div class="eq"><span class="m"><i>y</i>(<i>t</i>) = <i>y</i><sub>0</sub> + <i>K</i> Δ<i>u</i> (1 − e<sup>−<i>t</i>/τ</sup>)</span><span class="note">resposta ao degrau Δu</span></div><div class="eq"><span class="m">63,2 % em τ · 86,5 % em 2τ · 95 % em 3τ · 98,2 % em 4τ · 99,3 % em 5τ</span><span class="note">fração da variação final</span></div></div>
+    <p class="sub-h">2ª ordem</p>
+    <div class="eqs"><div class="eq key"><span class="m"><span class="fr"><span>d<sup>2</sup><i>y</i></span><span>dt<sup>2</sup></span></span> + 2ζω<sub><i>n</i></sub> <span class="fr"><span>d<i>y</i></span><span>dt</span></span> + ω<sub><i>n</i></sub><sup>2</sup> <i>y</i> = <i>K</i> ω<sub><i>n</i></sub><sup>2</sup> <i>u</i>(<i>t</i>)</span><span class="note">forma padrão (ou τ²ÿ + 2ζτẏ + y = Ku, com τ = 1/ω<sub>n</sub>)</span></div><div class="eq"><span class="m"><i>r</i> = −ζω<sub><i>n</i></sub> ± ω<sub><i>n</i></sub>√(ζ<sup>2</sup> − 1)</span><span class="note">raízes características</span></div><div class="eq"><span class="m">ζ &gt; 1 superamortecido · ζ = 1 crítico · 0 &lt; ζ &lt; 1 subamortecido · ζ = 0 oscila sem parar</span><span class="note">classificação</span></div><div class="eq"><span class="m">ω<sub><i>d</i></sub> = ω<sub><i>n</i></sub>√(1 − ζ<sup>2</sup>) &nbsp;·&nbsp; <i>OS</i> = exp(<span class="fr"><span>−πζ</span><span>√(1 − ζ<sup>2</sup>)</span></span>) &nbsp;·&nbsp; <i>t<sub>p</sub></i> = π/ω<sub><i>d</i></sub> &nbsp;·&nbsp; <i>t<sub>s</sub></i> ≈ 4/(ζω<sub><i>n</i></sub>)</span><span class="note">subamortecido: frequência amortecida, sobressinal, tempo de pico, acomodação 2 %</span></div></div>
+    <p class="sub-h">Solução da EDO homogênea a y″ + b y′ + c y = 0</p>
+    <div class="eqs"><div class="eq"><span class="m"><i>a r</i><sup>2</sup> + <i>b r</i> + <i>c</i> = 0</span><span class="note">equação característica</span></div><div class="eq"><span class="m">reais distintas: <i>C</i><sub>1</sub>e<sup><i>r</i><sub>1</sub><i>t</i></sup> + <i>C</i><sub>2</sub>e<sup><i>r</i><sub>2</sub><i>t</i></sup> · dupla: (<i>C</i><sub>1</sub> + <i>C</i><sub>2</sub><i>t</i>)e<sup><i>rt</i></sup> · complexas α ± <i>j</i>β: e<sup>α<i>t</i></sup>(<i>C</i><sub>1</sub>cos β<i>t</i> + <i>C</i><sub>2</sub>sen β<i>t</i>)</span><span class="note">forma da solução conforme as raízes</span></div></div>
+    <p class="sub-h">Parâmetros de sistemas usuais</p>
+    <div class="scroll-x">
+    <table class="f">
+      <thead><tr><th>Sistema</th><th>Parâmetros</th></tr></thead>
+      <tbody>
+        <tr><td>RC série</td><td><span class="m">τ = <i>RC</i></span></td></tr>
+        <tr><td>RL série</td><td><span class="m">τ = <i>L</i>/<i>R</i></span></td></tr>
+        <tr><td>Corpo em capacitância concentrada</td><td><span class="m">τ = ρ<i>V c<sub>p</sub></i> / (<i>h A</i>)</span></td></tr>
+        <tr><td>Tanque com saída linear</td><td><span class="m">τ = <i>A R</i>, &nbsp; <i>K</i> = <i>R</i></span></td></tr>
+        <tr><td>Tanque de mistura (sem reação)</td><td><span class="m">τ = <i>V</i>/<i>q</i></span></td></tr>
+        <tr><td>RLC série</td><td><span class="m">ω<sub><i>n</i></sub> = <span class="fr"><span>1</span><span>√(<i>LC</i>)</span></span>, &nbsp; ζ = <span class="fr"><span><i>R</i></span><span>2</span></span>√(<i>C</i>/<i>L</i>)</span></td></tr>
+        <tr><td>RLC paralelo</td><td><span class="m">ω<sub><i>n</i></sub> = <span class="fr"><span>1</span><span>√(<i>LC</i>)</span></span>, &nbsp; ζ = <span class="fr"><span>1</span><span>2<i>R</i></span></span>√(<i>L</i>/<i>C</i>)</span></td></tr>
+        <tr><td>Massa-mola-amortecedor</td><td><span class="m">ω<sub><i>n</i></sub> = √(<i>k</i>/<i>m</i>), &nbsp; ζ = <span class="fr"><span><i>b</i></span><span>2√(<i>k m</i>)</span></span></span></td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+</section>
+
+<section class="card method" id="laplace">
+  <h3>Transformada de Laplace</h3>
+  <div class="body">
+    <div class="scroll-x">
+    <table class="f lap">
+      <thead><tr><th>f(t)</th><th>F(s)</th><th>f(t)</th><th>F(s)</th></tr></thead>
+      <tbody>
+        <tr><td><span class="m">δ(<i>t</i>)</span></td><td><span class="m">1</span></td><td><span class="m">e<sup>−<i>at</i></sup></span></td><td><span class="m"><span class="fr"><span>1</span><span><i>s</i> + <i>a</i></span></span></span></td></tr>
+        <tr><td><span class="m">degrau 1</span></td><td><span class="m"><span class="fr"><span>1</span><span><i>s</i></span></span></span></td><td><span class="m"><i>t</i> e<sup>−<i>at</i></sup></span></td><td><span class="m"><span class="fr"><span>1</span><span>(<i>s</i> + <i>a</i>)<sup>2</sup></span></span></span></td></tr>
+        <tr><td><span class="m"><i>t</i></span></td><td><span class="m"><span class="fr"><span>1</span><span><i>s</i><sup>2</sup></span></span></span></td><td><span class="m">sen ω<i>t</i></span></td><td><span class="m"><span class="fr"><span>ω</span><span><i>s</i><sup>2</sup> + ω<sup>2</sup></span></span></span></td></tr>
+        <tr><td><span class="m"><i>t<sup>n</sup></i></span></td><td><span class="m"><span class="fr"><span><i>n</i>!</span><span><i>s</i><sup><i>n</i>+1</sup></span></span></span></td><td><span class="m">cos ω<i>t</i></span></td><td><span class="m"><span class="fr"><span><i>s</i></span><span><i>s</i><sup>2</sup> + ω<sup>2</sup></span></span></span></td></tr>
+        <tr><td><span class="m">1 − e<sup>−<i>t</i>/τ</sup></span></td><td><span class="m"><span class="fr"><span>1</span><span><i>s</i>(τ<i>s</i> + 1)</span></span></span></td><td><span class="m">e<sup>−<i>at</i></sup> sen ω<i>t</i></span></td><td><span class="m"><span class="fr"><span>ω</span><span>(<i>s</i> + <i>a</i>)<sup>2</sup> + ω<sup>2</sup></span></span></span></td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="sub-h">Propriedades</p>
+    <div class="eqs"><div class="eq key"><span class="m">ℒ{<span class="fr"><span>d<i>f</i></span><span>dt</span></span>} = <i>sF</i>(<i>s</i>) − <i>f</i>(0) &nbsp;·&nbsp; ℒ{<span class="fr"><span>d<sup>2</sup><i>f</i></span><span>dt<sup>2</sup></span></span>} = <i>s</i><sup>2</sup><i>F</i> − <i>s f</i>(0) − <i>f</i>′(0)</span><span class="note">derivadas</span></div><div class="eq"><span class="m">ℒ{<span class="int"><span class="s">∫</span><span class="lim"><span><i>t</i></span><span>0</span></span></span><i>f</i> dτ} = <span class="fr"><span><i>F</i>(<i>s</i>)</span><span><i>s</i></span></span></span><span class="note">integral</span></div><div class="eq"><span class="m">ℒ{<i>f</i>(<i>t</i> − θ)} = e<sup>−θ<i>s</i></sup> <i>F</i>(<i>s</i>)</span><span class="note">atraso (tempo morto)</span></div><div class="eq"><span class="m"><i>f</i>(∞) = lim<sub><i>s</i>→0</sub> <i>s F</i>(<i>s</i>) &nbsp;·&nbsp; <i>f</i>(0<sup>+</sup>) = lim<sub><i>s</i>→∞</sub> <i>s F</i>(<i>s</i>)</span><span class="note">valor final (só se estável) · valor inicial</span></div></div>
+  </div>
+</section>
+
+<section class="card method" id="edo-numerica">
+  <h3>Integração numérica de EDOs <span>y′ = f(t, y), passo h</span></h3>
+  <div class="body">
+    <div class="eqs"><div class="eq"><span class="m"><i>y</i><sub><i>i</i>+1</sub> = <i>y<sub>i</sub></i> + <i>h f</i>(<i>t<sub>i</sub></i>, <i>y<sub>i</sub></i>)</span><span class="note">Euler explícito — erro global O(h)</span></div></div>
+<pre class="algo"><b>RK4</b>  — erro global O(h⁴)
+k₁ = f(tᵢ,        yᵢ)
+k₂ = f(tᵢ + h/2,  yᵢ + h·k₁/2)
+k₃ = f(tᵢ + h/2,  yᵢ + h·k₂/2)
+k₄ = f(tᵢ + h,    yᵢ + h·k₃)
+yᵢ₊₁ = yᵢ + (h/6)(k₁ + 2k₂ + 2k₃ + k₄)</pre>
+    <p class="sub-h">EDO de 2ª ordem → sistema de 1ª ordem</p>
+    <div class="eqs"><div class="eq key"><span class="m"><i>x</i><sub>1</sub> = <i>q</i>, &nbsp; <i>x</i><sub>2</sub> = <span class="fr"><span>d<i>q</i></span><span>dt</span></span> = <i>i</i> &nbsp;⇒&nbsp; <i>ẋ</i><sub>1</sub> = <i>x</i><sub>2</sub>, &nbsp; <i>ẋ</i><sub>2</sub> = <span class="fr"><span><i>v<sub>s</sub></i> − <i>R x</i><sub>2</sub> − <i>x</i><sub>1</sub>/<i>C</i></span><span><i>L</i></span></span></span><span class="note">RLC série: os estados naturais são q e i</span></div></div>
+    <p class="pitfall"><b>Estabilidade de Euler:</b> para τẏ + y = 0 o passo precisa de h &lt; 2τ, senão a solução numérica oscila e diverge. Em sistemas com constantes de tempo muito diferentes (rígidos), o menor τ manda.</p>
+  </div>
+</section>
+
+<section class="card" id="constantes">
+  <h2>Constantes e conversões</h2>
+  <div class="body">
+    <dl class="facts">
+      <dt>Gravidade</dt><dd>g = 9,81 m/s²</dd>
+      <dt>Stefan-Boltzmann</dt><dd>σ = 5,67 × 10⁻⁸ W/(m²·K⁴)</dd>
+      <dt>Constante dos gases</dt><dd>R = 8,314 J/(mol·K) = 0,08206 L·atm/(mol·K)</dd>
+      <dt>Temperatura</dt><dd>T[K] = T[°C] + 273,15 · ΔT[K] = ΔT[°C]</dd>
+      <dt>Pressão</dt><dd>1 atm = 101 325 Pa = 1,01325 bar = 760 mmHg</dd>
+      <dt>Energia</dt><dd>1 cal = 4,184 J · 1 kWh = 3,6 × 10⁶ J</dd>
+      <dt>Volume</dt><dd>1 L = 10⁻³ m³</dd>
+      <dt>Água (~25 °C)</dt><dd>ρ ≈ 997 kg/m³ · c<sub>p</sub> ≈ 4,18 kJ/(kg·K) · k ≈ 0,61 W/(m·K)</dd>
+    </dl>
+  </div>
+</section>
+
+</div>
+</div>
+</main>
+
+<footer><div class="wrap">EN 242 — Modelagem de Processos em Engenharia · Folha de consulta. Arquivo único, sem conexão com a internet: funciona ao abrir localmente e no GitHub Pages.</div></footer>
+
+</body>
+</html>
