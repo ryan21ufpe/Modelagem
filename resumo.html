@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resumo dos métodos — sistemas lineares, equações e sistemas não-lineares</title>
+<style>
+:root{
+  --paper:#eef1f5;
+  --panel:#ffffff;
+  --ink:#16202c;
+  --muted:#5d6b7b;
+  --rule:#ccd5de;
+  --rule-soft:#e3e9ef;
+  --blue:#2f5fd0;
+  --blue-dark:#1f3f92;
+  --amber:#c07600;
+  --green:#0f766e;
+  --purple:#8b2fa0;
+  --red:#b02a1e;
+  --grid:#dde4eb;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  --sans: ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:15px;
+  line-height:1.5;
+  -webkit-text-size-adjust:100%;
+}
+a{color:var(--blue-dark)}
+code{font-family:var(--mono);font-size:12.5px}
+
+/* ---------- cabeçalho ---------- */
+header{
+  border-bottom:1px solid var(--rule);
+  background:
+    linear-gradient(var(--grid) 1px, transparent 1px) 0 0/28px 28px,
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0/28px 28px,
+    #f7f9fb;
+}
+.wrap{max-width:1220px;margin:0 auto;padding:0 20px}
+.head-in{padding:34px 0 28px;display:flex;flex-wrap:wrap;gap:24px;align-items:flex-end;justify-content:space-between}
+h1{
+  font-family:var(--serif);
+  font-weight:600;
+  font-size:clamp(28px,4.4vw,44px);
+  line-height:1.08;
+  margin:0;
+  letter-spacing:-.01em;
+  max-width:16ch;
+}
+h1 em{font-style:normal;display:block;color:var(--blue-dark)}
+.head-note{max-width:44ch;color:var(--muted);margin:0;font-size:14px}
+
+/* navegação entre as páginas do site */
+.nav{display:flex;gap:2px;padding-top:14px;flex-wrap:wrap}
+.nav a{
+  font-size:13.5px;text-decoration:none;color:var(--muted);
+  padding:6px 12px;border:1px solid var(--rule);border-bottom:0;
+  border-radius:4px 4px 0 0;background:#eef1f5;
+}
+.nav a:hover{background:#fff;color:var(--ink)}
+.nav a[aria-current]{background:#fff;color:var(--ink);font-weight:600;box-shadow:inset 0 2px 0 var(--blue)}
+a:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+
+/* ---------- layout ---------- */
+main{padding:26px 0 70px}
+.doc{display:grid;grid-template-columns:230px minmax(0,1fr);gap:22px;align-items:start}
+@media (max-width:960px){.doc{grid-template-columns:minmax(0,1fr)}}
+
+/* índice lateral */
+.toc{position:sticky;top:16px;background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:14px 0 10px;font-size:13.5px}
+.toc p{font-family:var(--serif);font-weight:600;font-size:15px;margin:0 16px 8px}
+.toc ol{list-style:none;margin:0 0 8px;padding:0}
+.toc > ol > li > a{display:block;padding:5px 16px;font-weight:600;color:var(--ink);text-decoration:none}
+.toc ol ol a{display:block;padding:3px 16px 3px 28px;color:var(--muted);text-decoration:none}
+.toc a:hover{background:#f2f5f9;color:var(--ink)}
+@media (max-width:960px){
+  .toc{position:static}
+  .toc > ol{columns:2 220px;column-gap:10px}
+  .toc > ol > li{break-inside:avoid}
+}
+
+/* blocos */
+.card{background:var(--panel);border:1px solid var(--rule);border-radius:6px;margin-bottom:18px;scroll-margin-top:16px}
+.card > h2,.card > h3{
+  font-family:var(--serif);font-weight:600;margin:0;
+  padding:13px 16px;border-bottom:1px solid var(--rule-soft);
+  display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;
+}
+.card > h2{font-size:19px}
+.card > h3{font-size:17px}
+.card > h2 span,.card > h3 span{font-family:var(--sans);font-size:12.5px;font-weight:400;color:var(--muted)}
+.card .body{padding:16px}
+.body > p{margin:0 0 12px;max-width:78ch}
+.body > p:last-child{margin-bottom:0}
+
+/* grupo = uma página da ferramenta */
+.group{scroll-margin-top:16px;margin:30px 0 12px}
+.group:first-of-type{margin-top:0}
+.group h2{font-family:var(--serif);font-weight:600;font-size:clamp(22px,2.6vw,28px);line-height:1.15;margin:0 0 6px}
+.group p{margin:0;color:var(--muted);max-width:78ch}
+.group .tool{font-size:13.5px}
+
+/* método */
+.method{border-left:3px solid var(--blue)}
+.method.amber{border-left-color:var(--amber)}
+.method.green{border-left-color:var(--green)}
+.method.purple{border-left-color:var(--purple)}
+.method .lead{font-size:15px}
+
+pre.algo{font-family:var(--mono);font-size:12.5px;line-height:1.6;background:#f7f9fb;border:1px solid var(--rule);
+  border-radius:4px;padding:11px 13px;overflow-x:auto;margin:0 0 14px}
+pre.algo b{color:var(--blue-dark)}
+
+dl.facts{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:6px 16px;margin:0 0 12px;font-size:13.5px}
+dl.facts dt{color:var(--muted)}
+dl.facts dd{margin:0}
+@media (max-width:560px){
+  dl.facts{grid-template-columns:minmax(0,1fr);gap:0}
+  dl.facts dd{margin-bottom:8px}
+}
+
+.pitfall{background:#fdf7e8;border:1px solid #e6d3a3;border-radius:4px;padding:9px 12px;font-size:13.5px;color:#6b4a00;margin:0 0 12px}
+.pitfall b{color:#5a3e00}
+.go{font-size:13.5px;font-weight:600}
+
+/* tabelas comparativas */
+.scroll-x{overflow-x:auto}
+table.cmp{width:100%;border-collapse:collapse;font-size:13.5px;min-width:620px}
+table.cmp th{text-align:left;font-weight:600;color:var(--muted);font-size:12.5px;padding:0 10px 7px 0;border-bottom:1px solid var(--rule);vertical-align:bottom}
+table.cmp td{padding:7px 10px 7px 0;border-bottom:1px solid var(--rule-soft);vertical-align:top}
+table.cmp tbody tr:last-child td{border-bottom:0}
+table.cmp td:first-child{font-weight:600;white-space:nowrap}
+table.cmp i{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:7px}
+
+/* escolha rápida */
+ol.choose{margin:0;padding:0;list-style:none;counter-reset:q}
+ol.choose > li{counter-increment:q;display:grid;grid-template-columns:28px minmax(0,1fr);gap:4px 10px;padding:10px 0;border-bottom:1px solid var(--rule-soft)}
+ol.choose > li:first-child{padding-top:0}
+ol.choose > li:last-child{border-bottom:0;padding-bottom:0}
+ol.choose > li::before{content:counter(q);font-family:var(--serif);font-weight:600;font-size:17px;color:var(--blue-dark);line-height:1.3}
+ol.choose p{margin:0;grid-column:2}
+ol.choose p + p{color:var(--muted);font-size:13.5px;margin-top:3px}
+
+/* conexões entre os métodos */
+ul.links{margin:0;padding:0;list-style:none}
+ul.links li{padding:9px 0;border-bottom:1px solid var(--rule-soft)}
+ul.links li:first-child{padding-top:0}
+ul.links li:last-child{border-bottom:0;padding-bottom:0}
+ul.links b{font-weight:600}
+
+footer{border-top:1px solid var(--rule);color:var(--muted);font-size:12.5px;padding:16px 0 26px}
+
+@media print{
+  header{background:none}
+  .nav,.toc,.go{display:none}
+  .doc{grid-template-columns:1fr}
+  .card{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="head-in">
+      <h1>Resumo dos métodos<em>como cada um funciona e quando usar</em></h1>
+      <p class="head-note">Os onze métodos das três ferramentas, lado a lado: a ideia de cada um, o algoritmo em poucas linhas, o que ele exige para começar, se converge sempre e onde costuma falhar. Cada bloco leva à página onde o método roda com passo a passo.</p>
+    </div>
+    <nav class="nav">
+      <a href="index.html">Sistemas lineares</a>
+      <a href="nao-lineares.html">Equações não-lineares</a>
+      <a href="sistemas-nao-lineares.html">Sistemas não-lineares</a>
+      <a href="resumo.html" aria-current="page">Resumo dos métodos</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+<div class="doc">
+
+<nav class="toc" aria-label="Índice da página">
+  <p>Nesta página</p>
+  <ol>
+    <li><a href="#escolha">Qual método usar</a></li>
+    <li><a href="#lineares">Sistemas lineares</a>
+      <ol>
+        <li><a href="#gauss">Eliminação de Gauss</a></li>
+        <li><a href="#pivot">Gauss com pivotação</a></li>
+        <li><a href="#jordan">Gauss-Jordan</a></li>
+        <li><a href="#jacobi">Jacobi</a></li>
+        <li><a href="#seidel">Gauss-Seidel</a></li>
+      </ol>
+    </li>
+    <li><a href="#equacoes">Equações não-lineares</a>
+      <ol>
+        <li><a href="#bisseccao">Bissecção</a></li>
+        <li><a href="#falsi">Regula falsi</a></li>
+        <li><a href="#newton">Newton-Raphson</a></li>
+        <li><a href="#secante">Secante</a></li>
+      </ol>
+    </li>
+    <li><a href="#sistemas-nl">Sistemas não-lineares</a>
+      <ol>
+        <li><a href="#newton-n">Newton-Raphson para n equações</a></li>
+        <li><a href="#ponto-fixo">Ponto fixo</a></li>
+      </ol>
+    </li>
+    <li><a href="#conexoes">Como os métodos se conectam</a></li>
+    <li><a href="#parada">Critérios de parada</a></li>
+  </ol>
+</nav>
+
+<div>
+
+<!-- ================= ESCOLHA ================= -->
+<section class="card" id="escolha">
+  <h2>Qual método usar</h2>
+  <div class="body">
+    <ol class="choose">
+      <li>
+        <p>As incógnitas aparecem só multiplicadas por constantes (ou por funções de parâmetros)?</p>
+        <p>É um sistema <b>linear</b>, <code>A·x = b</code>. Para poucas incógnitas, use eliminação de Gauss com pivotação: resposta exata em um número fixo de operações. Para sistemas grandes e diagonalmente dominantes, Gauss-Seidel costuma sair mais barato. <a href="index.html">Abrir sistemas lineares</a></p>
+      </li>
+      <li>
+        <p>Há uma única incógnita dentro de uma função não-linear (<code>sen x</code>, <code>eˣ</code>, <code>x³</code>…)?</p>
+        <p>É uma <b>equação não-linear</b>, <code>f(x) = 0</code>. Se você consegue cercar a raiz num intervalo com troca de sinal e quer garantia, use bissecção ou regula falsi. Se tem um bom chute e quer rapidez, Newton-Raphson (com derivada) ou secante (sem derivada). <a href="nao-lineares.html">Abrir equações não-lineares</a></p>
+      </li>
+      <li>
+        <p>Várias incógnitas e pelo menos uma equação não-linear nelas?</p>
+        <p>É um <b>sistema não-linear</b>, <code>F(X) = 0</code>. Newton-Raphson é o padrão: converge rápido a partir de um chute razoável. O ponto fixo é mais simples de montar, mas só converge para rearranjos favoráveis. <a href="sistemas-nao-lineares.html">Abrir sistemas não-lineares</a></p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ================= SISTEMAS LINEARES ================= -->
+<div class="group" id="lineares">
+  <h2>Sistemas lineares</h2>
+  <p>Resolver <code>A·x = b</code> com <i>n</i> equações e <i>n</i> incógnitas. Os <b>métodos diretos</b> chegam à solução em um número finito e previsível de operações; os <b>iterativos</b> partem de um chute e o refinam até o erro ficar abaixo da tolerância. <a class="tool" href="index.html">Resolver na ferramenta</a></p>
+</div>
+
+<article class="card method" id="gauss">
+  <h3>Eliminação de Gauss <span>direto</span></h3>
+  <div class="body">
+    <p class="lead">Transforma o sistema num sistema triangular superior equivalente e resolve de baixo para cima.</p>
+<pre class="algo"><b>1.</b> para cada coluna k = 1 … n−1 (o pivô é a<sub>kk</sub>):
+     para cada linha i abaixo de k:
+       m = a<sub>ik</sub> / a<sub>kk</sub>
+       linha i ← linha i − m · linha k      (inclui b)
+<b>2.</b> substituição regressiva:
+     x<sub>n</sub> = b<sub>n</sub> / a<sub>nn</sub>
+     x<sub>i</sub> = ( b<sub>i</sub> − Σ<sub>j&gt;i</sub> a<sub>ij</sub>·x<sub>j</sub> ) / a<sub>ii</sub>,  i = n−1 … 1</pre>
+    <dl class="facts">
+      <dt>Precisa de</dt><dd>A e b; nenhum chute inicial</dd>
+      <dt>Resultado</dt><dd>exato, a menos do arredondamento</dd>
+      <dt>Custo</dt><dd>cerca de 2n³/3 operações — cresce rápido com n</dd>
+    </dl>
+    <p class="pitfall"><b>Falha quando</b> algum pivô a<sub>kk</sub> é zero (divisão por zero), mesmo que o sistema tenha solução. Pivôs muito pequenos não travam o método, mas amplificam o erro de arredondamento.</p>
+    <a class="go" href="index.html">Resolver com eliminação de Gauss</a>
+  </div>
+</article>
+
+<article class="card method" id="pivot">
+  <h3>Gauss com pivotação parcial <span>direto</span></h3>
+  <div class="body">
+    <p class="lead">A mesma eliminação, mas antes de zerar cada coluna troca a linha do pivô pela que tem o maior |a<sub>ik</sub>| naquela coluna.</p>
+<pre class="algo"><b>1.</b> para cada coluna k:
+     encontre p ≥ k com o maior |a<sub>pk</sub>|
+     troque as linhas k e p                (em A e em b)
+     elimine abaixo do pivô como no Gauss simples
+<b>2.</b> substituição regressiva</pre>
+    <dl class="facts">
+      <dt>Precisa de</dt><dd>A e b</dd>
+      <dt>Vantagem</dt><dd>evita pivô nulo e mantém os multiplicadores |m| ≤ 1, o que reduz o erro de arredondamento</dd>
+      <dt>Custo</dt><dd>o mesmo do Gauss, mais as comparações para achar o maior pivô</dd>
+    </dl>
+    <p class="pitfall"><b>Falha quando</b> a coluna inteira abaixo do pivô é zero: aí a matriz é singular e o sistema não tem solução única — nenhum método direto resolve.</p>
+    <a class="go" href="index.html">Resolver com pivotação</a>
+  </div>
+</article>
+
+<article class="card method" id="jordan">
+  <h3>Gauss-Jordan <span>direto</span></h3>
+  <div class="body">
+    <p class="lead">Elimina acima e abaixo de cada pivô e normaliza o pivô para 1. A matriz vira a identidade e a solução aparece direto no vetor b.</p>
+<pre class="algo"><b>1.</b> para cada coluna k:
+     linha k ← linha k / a<sub>kk</sub>          (pivô = 1)
+     para toda linha i ≠ k:
+       linha i ← linha i − a<sub>ik</sub> · linha k
+<b>2.</b> ao final, [A | b] = [I | x]  →  x = b</pre>
+    <dl class="facts">
+      <dt>Precisa de</dt><dd>A e b</dd>
+      <dt>Vantagem</dt><dd>dispensa a substituição regressiva; aplicado a [A | I], devolve a inversa A⁻¹</dd>
+      <dt>Custo</dt><dd>cerca de n³ operações — em torno de 50 % a mais que o Gauss</dd>
+    </dl>
+    <p class="pitfall"><b>Falha quando</b> encontra pivô nulo, pelo mesmo motivo do Gauss simples. Para só resolver o sistema, raramente compensa o custo extra.</p>
+    <a class="go" href="index.html">Resolver com Gauss-Jordan</a>
+  </div>
+</article>
+
+<article class="card method green" id="jacobi">
+  <h3>Jacobi <span>iterativo</span></h3>
+  <div class="body">
+    <p class="lead">Isola a incógnita da diagonal em cada equação e recalcula todas ao mesmo tempo, usando só os valores da iteração anterior.</p>
+<pre class="algo"><b>1.</b> chute inicial x⁽⁰⁾ (vazio = zeros)
+<b>2.</b> para cada i:
+     x<sub>i</sub>⁽ᵏ⁺¹⁾ = ( b<sub>i</sub> − Σ<sub>j≠i</sub> a<sub>ij</sub>·x<sub>j</sub>⁽ᵏ⁾ ) / a<sub>ii</sub>
+<b>3.</b> repita até ε<sub>a</sub> &lt; ε<sub>s</sub> para todas as incógnitas</pre>
+    <dl class="facts">
+      <dt>Precisa de</dt><dd>A, b, chute inicial e critério de parada</dd>
+      <dt>Converge se</dt><dd>A for estritamente diagonalmente dominante: |a<sub>ii</sub>| &gt; Σ<sub>j≠i</sub> |a<sub>ij</sub>| em toda linha (condição suficiente, não necessária)</dd>
+      <dt>Custo</dt><dd>cerca de n² operações por iteração; guarda dois vetores (anterior e novo)</dd>
+    </dl>
+    <p class="pitfall"><b>Falha quando</b> a matriz não é dominante: a iteração pode oscilar ou divergir. Reordenar as equações para pôr os maiores coeficientes na diagonal muitas vezes resolve.</p>
+    <a class="go" href="index.html">Resolver com Jacobi</a>
+  </div>
+</article>
+
+<article class="card method green" id="seidel">
+  <h3>Gauss-Seidel <span>iterativo</span></h3>
+  <div class="body">
+    <p class="lead">Igual ao Jacobi, mas cada valor recém-calculado já entra nas equações seguintes da mesma iteração.</p>
+<pre class="algo"><b>1.</b> chute inicial x⁽⁰⁾
+<b>2.</b> para i = 1 … n, em ordem:
+     x<sub>i</sub>⁽ᵏ⁺¹⁾ = ( b<sub>i</sub> − Σ<sub>j&lt;i</sub> a<sub>ij</sub>·x<sub>j</sub>⁽ᵏ⁺¹⁾ − Σ<sub>j&gt;i</sub> a<sub>ij</sub>·x<sub>j</sub>⁽ᵏ⁾ ) / a<sub>ii</sub>
+<b>3.</b> repita até ε<sub>a</sub> &lt; ε<sub>s</sub></pre>
+    <dl class="facts">
+      <dt>Precisa de</dt><dd>A, b, chute inicial e critério de parada</dd>
+      <dt>Converge se</dt><dd>a mesma condição suficiente do Jacobi (dominância diagonal)</dd>
+      <dt>Vantagem</dt><dd>em geral precisa de menos iterações que o Jacobi e sobrescreve um único vetor, ocupando menos memória</dd>
+    </dl>
+    <p class="pitfall"><b>Atenção:</b> "em geral" não é "sempre" — existem matrizes em que o Jacobi converge e o Gauss-Seidel não. O resultado também depende da ordem das equações.</p>
+    <a class="go" href="index.html">Resolver com Gauss-Seidel</a>
+  </div>
+</article>
+
+<section class="card">
+  <h3>Comparação — sistemas lineares</h3>
+  <div class="body scroll-x">
+    <table class="cmp">
+      <thead><tr><th>Método</th><th>Tipo</th><th>Chute inicial?</th><th>Converge sempre?</th><th>Melhor para</th></tr></thead>
+      <tbody>
+        <tr><td>Gauss</td><td>direto</td><td>não</td><td>sim, se nenhum pivô for nulo</td><td>sistemas pequenos e bem condicionados</td></tr>
+        <tr><td>Gauss c/ pivotação</td><td>direto</td><td>não</td><td>sim, se A não for singular</td><td>escolha padrão para sistemas pequenos e médios</td></tr>
+        <tr><td>Gauss-Jordan</td><td>direto</td><td>não</td><td>sim, se nenhum pivô for nulo</td><td>calcular a inversa</td></tr>
+        <tr><td>Jacobi</td><td>iterativo</td><td>sim</td><td>não — garantido com dominância diagonal</td><td>sistemas grandes e esparsos; cálculo em paralelo</td></tr>
+        <tr><td>Gauss-Seidel</td><td>iterativo</td><td>sim</td><td>não — garantido com dominância diagonal</td><td>sistemas grandes e esparsos</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ================= EQUAÇÕES NÃO-LINEARES ================= -->
+<div class="group" id="equacoes">
+  <h2>Equações não-lineares</h2>
+  <p>Encontrar x tal que <code>f(x) = 0</code>. Os <b>métodos de confinamento</b> mantêm a raiz presa num intervalo e nunca escapam; os <b>métodos abertos</b> partem de pontos que não precisam cercar a raiz, convergem muito mais rápido e podem divergir. <a class="tool" href="nao-lineares.html">Resolver na ferramenta</a></p>
+</div>
+
+<article class="card method" id="bisseccao">
+  <h3>Bissecção <span>confinamento</span></h3>
+  <div class="body">
+    <p class="lead">Divide o intervalo ao meio a cada passo e fica com a metade onde f troca de sinal.</p>
+<pre class="algo"><b>1.</b> escolha [a, b] com f(a)·f(b) &lt; 0
+<b>2.</b> x<sub>m</sub> = (a + b) / 2
+<b>3.</b> se f(a)·f(x<sub>m</sub>) &lt; 0:  b = x<sub>m</sub>
+   senão:                a = x<sub>m</sub>
+<b>4.</b> repita até (b − a)/2 &lt; ε  ou  |f(x<sub>m</sub>)| &lt; tolerância</pre>
+    <dl class="facts">
+      <dt>Precisa de</dt><dd>um intervalo [a, b] com troca de sinal; f contínua</dd>
+      <dt>Converge?</dt><dd>sempre, se houver raiz no intervalo</dd>
+      <dt>Velocidade</dt><dd>linear — o erro cai à metade por iteração; dá para prever o número de iterações: n ≥ log₂((b − a)/ε)</dd>
+    </dl>
+    <p class="pitfall"><b>Limitações:</b> ignora o valor de f (só usa o sinal), por isso é lenta. Não acha raízes em que f toca o eixo sem cruzar (raiz dupla) e, se o intervalo contém várias raízes, encontra só uma delas.</p>
+    <a class="go" href="nao-lineares.html">Resolver com bissecção</a>
+  </div>
+</article>
+
+<article class="card method" id="falsi">
+  <h3>Regula falsi (falsa posição) <span>confinamento</span></h3>
+  <div class="body">
+    <p class="lead">Liga (a, f(a)) e (b, f(b)) por uma reta e usa o ponto onde ela corta o eixo x como nova estimativa — no lugar do ponto médio.</p>
+<pre class="algo"><b>1.</b> escolha [a, b] com f(a)·f(b) &lt; 0
+<b>2.</b> x<sub>r</sub> = b − f(b)·(a − b) / ( f(a) − f(b) )
+<b>3.</b> se f(a)·f(x<sub>r</sub>) &lt; 0:  b = x<sub>r</sub>
+   senão:                a = x<sub>r</sub>
+<b>4.</b> repita até |x<sub>r</sub>⁽ⁱ⁺¹⁾ − x<sub>r</sub>⁽ⁱ⁾| &lt; ε  ou  |f(x<sub>r</sub>)| &lt; tolerância</pre>
+    <dl class="facts">
+      <dt>Precisa de</dt><dd>o mesmo que a bissecção</dd>
+      <dt>Converge?</dt><dd>sempre, se houver raiz no intervalo</dd>
+      <dt>Velocidade</dt><dd>linear, mas quase sempre mais rápida que a bissecção porque aproveita o valor de f</dd>
+    </dl>
+    <p class="pitfall"><b>Falha quando</b> a função é muito curva perto da raiz: um dos extremos fica travado e o intervalo quase não encolhe. No exemplo x¹⁰ − 1 da ferramenta, após cinco iterações a bissecção está em 1,6 % de erro e a regula falsi ainda em 59 %.</p>
+    <a class="go" href="nao-lineares.html">Resolver com regula falsi</a>
+  </div>
+</article>
+
+<article class="card method purple" id="newton">
+  <h3>Newton-Raphson <span>aberto</span></h3>
+  <div class="body">
+    <p class="lead">Traça a reta tangente a f no ponto atual e toma como próxima estimativa o ponto onde a tangente corta o eixo x.</p>
+<pre class="algo"><b>1.</b> chute inicial x₀
+<b>2.</b> x<sub>i+1</sub> = x<sub>i</sub> − f(x<sub>i</sub>) / f′(x<sub>i</sub>)
+<b>3.</b> repita até |x<sub>i+1</sub> − x<sub>i</sub>| &lt; ε  ou  |f(x<sub>i+1</sub>)| &lt; tolerância</pre>
+    <dl class="facts">
+      <dt>Precisa de</dt><dd>um chute x₀ e a derivada f′(x) — na ferramenta, se não for dada, é estimada por diferença centrada</dd>
+      <dt>Converge?</dt><dd>não necessariamente — depende de x₀ estar perto da raiz</dd>
+      <dt>Velocidade</dt><dd>quadrática perto de uma raiz simples: o número de dígitos corretos aproximadamente dobra a cada iteração</dd>
+    </dl>
+    <p class="pitfall"><b>Falha quando</b> f′(x<sub>i</sub>) ≈ 0 (a tangente é quase horizontal e o passo explode), quando o chute está longe e as iterações oscilam ou divergem, ou em raízes múltiplas, onde a convergência cai para linear.</p>
+    <a class="go" href="nao-lineares.html">Resolver com Newton-Raphson</a>
+  </div>
+</article>
+
+<article class="card method purple" id="secante">
+  <h3>Secante <span>aberto</span></h3>
+  <div class="body">
+    <p class="lead">Newton-Raphson sem derivada: troca a tangente pela reta secante que passa pelas duas últimas estimativas.</p>
+<pre class="algo"><b>1.</b> dois chutes x₋₁ e x₀
+<b>2.</b> x<sub>i+1</sub> = x<sub>i</sub> − f(x<sub>i</sub>)·(x<sub>i−1</sub> − x<sub>i</sub>) / ( f(x<sub>i−1</sub>) − f(x<sub>i</sub>) )
+<b>3.</b> descarte o ponto mais antigo e repita</pre>
+    <dl class="facts">
+      <dt>Precisa de</dt><dd>dois chutes, que não precisam cercar a raiz</dd>
+      <dt>Converge?</dt><dd>não necessariamente</dd>
+      <dt>Velocidade</dt><dd>superlinear, ordem ≈ 1,618 — um pouco mais lenta que Newton por iteração, mas cada iteração só avalia f uma vez</dd>
+    </dl>
+    <p class="pitfall"><b>Diferença para a regula falsi:</b> a fórmula é parecida, mas a secante sempre descarta o ponto mais antigo, sem verificar o sinal. Por isso é mais rápida — e pode divergir. Se f(x<sub>i−1</sub>) ≈ f(x<sub>i</sub>), o denominador vai a zero.</p>
+    <a class="go" href="nao-lineares.html">Resolver com a secante</a>
+  </div>
+</article>
+
+<section class="card">
+  <h3>Comparação — equações não-lineares</h3>
+  <div class="body scroll-x">
+    <table class="cmp">
+      <thead><tr><th>Método</th><th>Precisa de</th><th>Converge sempre?</th><th>Ordem</th></tr></thead>
+      <tbody>
+        <tr><td><i style="background:var(--blue)"></i>Bissecção</td><td>[a, b] com f(a)·f(b) &lt; 0</td><td>sim, se houver raiz no intervalo</td><td>1 (fator ½ por iteração)</td></tr>
+        <tr><td><i style="background:var(--amber)"></i>Regula falsi</td><td>[a, b] com f(a)·f(b) &lt; 0</td><td>sim</td><td>1, quase sempre melhor que a bissecção</td></tr>
+        <tr><td><i style="background:var(--purple)"></i>Newton-Raphson</td><td>x₀ e f′(x)</td><td>não</td><td>2</td></tr>
+        <tr><td><i style="background:var(--green)"></i>Secante</td><td>x₋₁ e x₀, sem derivada</td><td>não</td><td>≈ 1,618</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ================= SISTEMAS NÃO-LINEARES ================= -->
+<div class="group" id="sistemas-nl">
+  <h2>Sistemas não-lineares</h2>
+  <p>Resolver <code>F(X) = 0</code>, com várias equações e várias incógnitas, sendo pelo menos uma equação não-linear. Os dois métodos são abertos: partem de um chute para cada incógnita e nenhum dos dois tem convergência garantida. <a class="tool" href="sistemas-nao-lineares.html">Resolver na ferramenta</a></p>
+</div>
+
+<article class="card method purple" id="newton-n">
+  <h3>Newton-Raphson para n equações <span>aberto</span></h3>
+  <div class="body">
+    <p class="lead">Generaliza o Newton de uma variável: em vez da derivada, usa a matriz jacobiana, e em vez de uma divisão, resolve um sistema linear a cada iteração.</p>
+<pre class="algo"><b>1.</b> chute inicial X₀
+<b>2.</b> monte F(X<sub>i</sub>) e o jacobiano Z<sub>kj</sub> = ∂f<sub>k</sub>/∂x<sub>j</sub> em X<sub>i</sub>
+<b>3.</b> resolva o sistema linear  Z·ΔX = −F(X<sub>i</sub>)      (eliminação de Gauss)
+<b>4.</b> X<sub>i+1</sub> = X<sub>i</sub> + ΔX
+<b>5.</b> repita até max|Δx<sub>j</sub>| ≤ ε</pre>
+    <dl class="facts">
+      <dt>Precisa de</dt><dd>um chute para cada incógnita; o jacobiano (na ferramenta, calculado por diferença centrada)</dd>
+      <dt>Converge?</dt><dd>não necessariamente — depende do chute</dd>
+      <dt>Velocidade</dt><dd>quadrática perto da raiz; no gráfico de erro em escala log, a curva despenca</dd>
+      <dt>Custo</dt><dd>n² derivadas e um sistema linear n×n por iteração</dd>
+    </dl>
+    <p class="pitfall"><b>Falha quando</b> o jacobiano é singular ou quase singular no ponto atual (o sistema linear não tem solução única), ou quando o chute está longe da raiz. Sistemas com várias soluções convergem para aquela mais "próxima" do chute — nem sempre a fisicamente válida.</p>
+    <a class="go" href="sistemas-nao-lineares.html">Resolver com Newton-Raphson</a>
+  </div>
+</article>
+
+<article class="card method amber" id="ponto-fixo">
+  <h3>Ponto fixo (substituição progressiva) <span>aberto</span></h3>
+  <div class="body">
+    <p class="lead">Reescreve cada equação isolando uma incógnita, <code>x<sub>j</sub> = g<sub>j</sub>(x₁, …, x<sub>n</sub>)</code>, e reaplica as funções g até os valores pararem de mudar.</p>
+<pre class="algo"><b>1.</b> reescreva cada equação como  x<sub>j</sub> = g<sub>j</sub>(x₁,…,x<sub>n</sub>)
+<b>2.</b> avalie as g<sub>j</sub>:
+     simultâneo (Jacobi)      — todas com os valores da iteração anterior
+     sucessivo (Gauss-Seidel) — cada uma já com os valores recém-calculados
+<b>3.</b> repita até max|Δx<sub>j</sub>| ≤ ε</pre>
+    <dl class="facts">
+      <dt>Precisa de</dt><dd>um chute para cada incógnita e um rearranjo x = g(x); sem derivadas</dd>
+      <dt>Converge se</dt><dd>(condição suficiente, 2 equações) |∂u/∂x| + |∂u/∂y| &lt; 1 e |∂v/∂x| + |∂v/∂y| &lt; 1 nas funções já isoladas</dd>
+      <dt>Velocidade</dt><dd>linear — o erro cai por um fator aproximadamente constante; no gráfico log, uma reta</dd>
+    </dl>
+    <p class="pitfall"><b>Falha quando</b> o rearranjo é desfavorável. O isolamento não é único, e o mesmo sistema pode divergir num rearranjo e convergir noutro (exemplo da Aula 9). Isolar a incógnita do termo de maior expoente costuma ajudar. A variante sucessiva converge mais rápido quando converge — e diverge mais fácil.</p>
+    <a class="go" href="sistemas-nao-lineares.html">Resolver com ponto fixo</a>
+  </div>
+</article>
+
+<section class="card">
+  <h3>Comparação — sistemas não-lineares</h3>
+  <div class="body scroll-x">
+    <table class="cmp">
+      <thead><tr><th>Método</th><th>Precisa de</th><th>Converge sempre?</th><th>Ordem</th></tr></thead>
+      <tbody>
+        <tr><td><i style="background:var(--blue)"></i>Newton-Raphson</td><td>X₀ e o jacobiano [Z]</td><td>não — depende do chute</td><td>2 (quadrática)</td></tr>
+        <tr><td><i style="background:var(--amber)"></i>Ponto fixo</td><td>X₀ e um rearranjo x = g(x)</td><td>não — depende do rearranjo</td><td>1 (linear)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ================= CONEXÕES ================= -->
+<section class="card" id="conexoes">
+  <h2>Como os métodos se conectam</h2>
+  <div class="body">
+    <ul class="links">
+      <li><b>Newton para sistemas depende de sistemas lineares.</b> Cada iteração resolve <code>Z·ΔX = −F</code> por eliminação de Gauss. Se o método linear falha (pivô nulo, matriz singular), o Newton para sistemas também falha.</li>
+      <li><b>Newton de uma variável é o caso n = 1.</b> Com uma equação, o jacobiano vira f′(x) e o sistema linear vira a divisão −f/f′.</li>
+      <li><b>Jacobi e Gauss-Seidel reaparecem no ponto fixo.</b> As variantes simultânea e sucessiva são a mesma ideia dos iterativos lineares: usar só a iteração anterior ou já aproveitar os valores novos. Na verdade, Jacobi e Gauss-Seidel <i>são</i> métodos de ponto fixo, com g vinda de isolar a diagonal de A.</li>
+      <li><b>Secante é Newton com derivada aproximada.</b> A inclinação da tangente é substituída pela inclinação entre as duas últimas estimativas.</li>
+      <li><b>Regula falsi e secante usam a mesma reta.</b> A diferença está só em qual ponto é descartado: a regula falsi preserva a troca de sinal, a secante descarta sempre o mais antigo.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ================= PARADA ================= -->
+<section class="card" id="parada">
+  <h2>Critérios de parada</h2>
+  <div class="body">
+    <p>Todo método iterativo precisa decidir quando parar. As três ferramentas usam variações dos mesmos critérios:</p>
+    <dl class="facts">
+      <dt>Erro relativo aproximado</dt><dd><code>ε<sub>a</sub> = |(x<sup>novo</sup> − x<sup>anterior</sup>) / x<sup>novo</sup>| · 100 %</code> — usado nos iterativos lineares, para todas as variáveis</dd>
+      <dt>Tolerância por algarismos</dt><dd><code>ε<sub>s</sub> = 5·10<sup>1−n</sup> %</code> garante pelo menos n algarismos significativos corretos (critério de Scarborough)</dd>
+      <dt>Passo absoluto</dt><dd><code>|x<sub>i+1</sub> − x<sub>i</sub>| &lt; ε</code> nos métodos abertos; <code>max|Δx<sub>j</sub>| ≤ ε</code> nos sistemas não-lineares; <code>(b − a)/2 &lt; ε</code> na bissecção</dd>
+      <dt>Resíduo</dt><dd><code>|f(x)| &lt; tolerância</code> ou <code>‖F(X)‖<sub>∞</sub></code> — mede se a equação está de fato satisfeita</dd>
+      <dt>Máximo de iterações</dt><dd>trava de segurança contra divergência ou convergência lenta demais</dd>
+    </dl>
+    <p class="pitfall"><b>Por que usar mais de um:</b> passo pequeno não garante resíduo pequeno (a função pode ser muito íngreme), e resíduo pequeno não garante x preciso (a função pode ser muito plana perto da raiz).</p>
+  </div>
+</section>
+
+</div>
+</div>
+</main>
+
+<footer><div class="wrap">EN 242 — Modelagem de Processos em Engenharia · Métodos conforme Gilat &amp; Subramaniam e Chapra &amp; Canale. Arquivo único, sem conexão com a internet: funciona ao abrir localmente e no GitHub Pages.</div></footer>
+
+</body>
+</html>
