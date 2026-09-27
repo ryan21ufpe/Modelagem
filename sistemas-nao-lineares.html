@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sistemas de equações não-lineares — Newton-Raphson e ponto fixo</title>
+<style>
+:root{
+  --paper:#eef1f5;
+  --panel:#ffffff;
+  --ink:#16202c;
+  --muted:#5d6b7b;
+  --rule:#ccd5de;
+  --rule-soft:#e3e9ef;
+  --blue:#2f5fd0;
+  --blue-dark:#1f3f92;
+  --amber:#c07600;
+  --green:#0f766e;
+  --purple:#8b2fa0;
+  --red:#b02a1e;
+  --grid:#dde4eb;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  --sans: ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:15px;
+  line-height:1.5;
+  -webkit-text-size-adjust:100%;
+}
+a{color:var(--blue-dark)}
+
+/* ---------- cabeçalho ---------- */
+header{
+  border-bottom:1px solid var(--rule);
+  background:
+    linear-gradient(var(--grid) 1px, transparent 1px) 0 0/28px 28px,
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0/28px 28px,
+    #f7f9fb;
+}
+.wrap{max-width:1220px;margin:0 auto;padding:0 20px}
+.head-in{padding:34px 0 28px;display:flex;flex-wrap:wrap;gap:24px;align-items:flex-end;justify-content:space-between}
+h1{
+  font-family:var(--serif);
+  font-weight:600;
+  font-size:clamp(28px,4.4vw,44px);
+  line-height:1.08;
+  margin:0;
+  letter-spacing:-.01em;
+  max-width:16ch;
+}
+h1 em{font-style:normal;display:block;color:var(--blue-dark)}
+.head-note{max-width:44ch;color:var(--muted);margin:0;font-size:14px}
+.head-note code{font-family:var(--mono);font-size:12.5px;background:#fff;border:1px solid var(--rule);padding:1px 4px;border-radius:3px}
+
+.nav{display:flex;gap:2px;padding-top:14px;flex-wrap:wrap}
+.nav a{
+  font-size:13.5px;text-decoration:none;color:var(--muted);
+  padding:6px 12px;border:1px solid var(--rule);border-bottom:0;
+  border-radius:4px 4px 0 0;background:#eef1f5;
+}
+.nav a:hover{background:#fff;color:var(--ink)}
+.nav a[aria-current]{background:#fff;color:var(--ink);font-weight:600;box-shadow:inset 0 2px 0 var(--blue)}
+
+/* ---------- layout ---------- */
+main{padding:26px 0 70px}
+.cols{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:22px;align-items:start}
+@media (max-width:960px){.cols{grid-template-columns:minmax(0,1fr)}}
+
+.card{background:var(--panel);border:1px solid var(--rule);border-radius:6px;margin-bottom:18px}
+.card > h2{
+  font-family:var(--serif);font-size:17px;font-weight:600;margin:0;
+  padding:13px 16px;border-bottom:1px solid var(--rule-soft);
+  display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+}
+.card > h2 span{font-family:var(--sans);font-size:12.5px;font-weight:400;color:var(--muted)}
+.card .body{padding:16px}
+
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px}
+input[type=text],input[type=number],textarea,select{
+  width:100%;font-family:var(--mono);font-size:13.5px;color:var(--ink);
+  background:#fbfcfd;border:1px solid var(--rule);border-radius:4px;padding:8px 9px;
+}
+select{font-family:var(--sans);font-size:14px}
+textarea{line-height:1.7;resize:vertical}
+input:focus,textarea:focus,select:focus,button:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+.field{margin-bottom:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row > *{flex:1 1 120px;min-width:0}
+
+button{
+  font-family:var(--sans);font-size:14px;cursor:pointer;
+  border:1px solid var(--rule);background:#fff;color:var(--ink);
+  border-radius:4px;padding:8px 13px;
+}
+button:hover{background:#f2f5f9}
+.primary{background:var(--blue);border-color:var(--blue-dark);color:#fff;font-weight:600;padding:10px 18px}
+.primary:hover{background:var(--blue-dark)}
+.tiny{font-size:12.5px;padding:5px 9px}
+
+/* método */
+.methods{display:grid;gap:6px}
+.methods label{
+  display:flex;gap:9px;align-items:flex-start;margin:0;color:var(--ink);font-size:14px;
+  border:1px solid var(--rule);border-radius:4px;padding:9px 11px;cursor:pointer;background:#fbfcfd;
+}
+.methods label:hover{background:#f2f5f9}
+.methods input{margin:3px 0 0}
+.methods label.on{border-color:var(--blue);background:#eef3fd;box-shadow:inset 3px 0 0 var(--blue)}
+.methods small{display:block;color:var(--muted);font-size:12.5px;line-height:1.35}
+
+.sub{border:1px solid var(--rule-soft);border-radius:4px;background:#f7f9fb;padding:10px 11px;margin-top:8px}
+.sub label{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;color:var(--ink);margin:0 0 6px}
+.sub label:last-child{margin-bottom:0}
+.sub input{margin:3px 0 0}
+.sub small{display:block;color:var(--muted);font-size:12.5px;line-height:1.35}
+
+/* parâmetros e incógnitas */
+table.params{width:100%;border-collapse:collapse;font-size:13px}
+table.params th{text-align:left;font-weight:600;color:var(--muted);font-size:12px;padding:0 6px 6px 0}
+table.params td{padding:3px 6px 3px 0;vertical-align:middle}
+table.params input[type=text],table.params input[type=number]{padding:5px 6px;font-size:13px}
+table.params td.nm input{font-weight:600}
+table.params td.del{width:30px}
+table.params td.del button{font-family:var(--mono);font-size:13px;line-height:1;padding:4px 8px}
+
+/* mensagens */
+.msg{border-radius:4px;padding:10px 12px;font-size:13.5px;margin-bottom:12px;border:1px solid}
+.msg.err{background:#fdf1ef;border-color:#e8bdb6;color:var(--red)}
+.msg.warn{background:#fdf7e8;border-color:#e6d3a3;color:#7a5300}
+.msg.ok{background:#eef7f4;border-color:#b7dbd2;color:var(--green)}
+.msg code{font-family:var(--mono);font-size:12.5px}
+
+/* solução */
+.sol{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+.sol div{border:1px solid var(--rule);border-left:3px solid var(--blue);border-radius:3px;padding:7px 12px;background:#fbfcfd}
+.sol b{font-family:var(--mono);font-weight:600;font-size:13px;color:var(--blue-dark)}
+.sol span{display:block;font-family:var(--mono);font-size:15px}
+
+/* tabelas */
+table.it{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12.5px}
+table.it th{background:#f4f7fa;color:var(--muted);font-weight:600;text-align:right;padding:5px 8px;border-bottom:1px solid var(--rule);position:sticky;top:0}
+table.it td{text-align:right;padding:4px 8px;border-bottom:1px solid var(--rule-soft)}
+table.it td:first-child,table.it th:first-child{text-align:left}
+table.it tbody tr:last-child td{background:#eef3fd;font-weight:600}
+table.it tbody tr.sel td{background:#fdf7e8}
+table.it tbody tr{cursor:pointer}
+.scroll{max-height:330px;overflow:auto;border:1px solid var(--rule-soft);border-radius:4px}
+
+table.cmp{width:100%;border-collapse:collapse;font-size:13px}
+table.cmp th{text-align:left;font-weight:600;color:var(--muted);font-size:12px;padding:0 8px 6px 0;border-bottom:1px solid var(--rule)}
+table.cmp td{padding:5px 8px 5px 0;border-bottom:1px solid var(--rule-soft);font-family:var(--mono);font-size:12.5px}
+table.cmp td:first-child{font-family:var(--sans);font-size:13px}
+table.cmp i{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:7px}
+
+/* matriz jacobiana */
+table.mat{border-collapse:collapse;font-family:var(--mono);font-size:12px;margin-top:6px}
+table.mat td{padding:3px 9px;text-align:right;border-bottom:1px solid var(--rule-soft)}
+table.mat th{padding:3px 9px;text-align:right;font-size:11.5px;color:var(--muted);font-weight:600;border-bottom:1px solid var(--rule)}
+table.mat td:first-child,table.mat th:first-child{text-align:left;color:var(--muted);font-size:11.5px}
+
+details{border-top:1px solid var(--rule-soft);padding:10px 0 0}
+details summary{cursor:pointer;font-size:13.5px;color:var(--blue-dark);font-weight:600}
+details[open] summary{margin-bottom:8px}
+pre.algo{font-family:var(--mono);font-size:12px;line-height:1.55;background:#f7f9fb;border:1px solid var(--rule);
+  border-radius:4px;padding:11px 13px;overflow-x:auto;margin:0 0 12px}
+pre.algo b{color:var(--blue-dark)}
+
+/* barra de controles do gráfico */
+.play{display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%;
+  border:1px solid var(--rule);border-radius:4px;background:#f7f9fb;padding:8px 10px;margin-bottom:10px}
+.play input[type=number]{width:82px;padding:5px 6px;font-size:12.5px}
+.play label{margin:0;font-size:12.5px;white-space:nowrap;color:var(--muted)}
+.play .gap{flex:1 1 auto}
+.play input[type=range]{flex:1 1 160px;accent-color:var(--blue);width:auto}
+
+.live{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.live div{font-family:var(--mono);font-size:12.5px;border:1px solid var(--rule);border-left:3px solid var(--blue);
+  border-radius:3px;padding:4px 9px;background:#fbfcfd}
+.live b{font-weight:500;color:var(--muted)}
+
+/* gráfico */
+.chart-head{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;margin-bottom:8px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;margin-bottom:8px}
+.legend button{border:0;background:none;padding:2px 0;display:flex;gap:6px;align-items:center;font-family:var(--mono);font-size:12.5px;cursor:pointer}
+.legend i{width:16px;height:3px;border-radius:2px;display:inline-block}
+.legend button.off{opacity:.35}
+#plotv{width:100%;height:340px;display:block}
+#plotc{width:100%;height:300px;display:block}
+.hint{font-size:12.5px;color:var(--muted);margin:8px 0 0}
+
+.help dt{font-family:var(--mono);font-size:12.5px;color:var(--blue-dark);margin-top:8px}
+.help dd{margin:2px 0 0;font-size:13px;color:var(--muted)}
+.help p{font-size:13px;color:var(--muted)}
+.help table.cmp td:first-child{white-space:nowrap}
+footer{border-top:1px solid var(--rule);color:var(--muted);font-size:12.5px;padding:16px 0 26px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="head-in">
+      <h1>Sistemas não-lineares<em>Newton-Raphson e substituição progressiva</em></h1>
+      <p class="head-note">Escreva as equações uma por linha, com <code>=</code>, dê um chute inicial para cada incógnita e acompanhe o Jacobiano, a tabela e os gráficos iteração a iteração. O mesmo sistema pode ser resolvido pelos dois métodos para comparar a velocidade de convergência.</p>
+    </div>
+    <nav class="nav">
+      <a href="index.html">Sistemas lineares</a>
+      <a href="nao-lineares.html">Equações não-lineares</a>
+      <a href="sistemas-nao-lineares.html" aria-current="page">Sistemas não-lineares</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+<div class="cols">
+
+  <!-- ================= COLUNA ESQUERDA ================= -->
+  <div>
+    <section class="card">
+      <h2>1. Método</h2>
+      <div class="body">
+        <div class="methods" id="methods"></div>
+        <div class="sub" id="subpf" hidden>
+          <label><input type="radio" name="modo" value="jacobi" checked>
+            <span>Simultâneo (Jacobi)<small>Todas as incógnitas usam os valores da iteração anterior. É a forma do enunciado da lista.</small></span></label>
+          <label><input type="radio" name="modo" value="seidel">
+            <span>Sucessivo (Gauss-Seidel)<small>Cada linha já usa o valor recém-calculado das linhas acima. Converge mais rápido quando converge — e estoura mais fácil.</small></span></label>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>2. Sistema <span id="sysmeta"></span></h2>
+      <div class="body">
+        <div class="field">
+          <label for="preset">Exemplos das aulas e da lista</label>
+          <select id="preset">
+            <option value="0">Lista 1 · Ex. 1 — cano de vapor, T na superfície</option>
+            <option value="1">Lista 1 · Ex. 2 — painel e aquecedor, 4 incógnitas</option>
+            <option value="2">Aula 9 — x² + xy = 10 ; y + 3xy² = 57</option>
+            <option value="3">Aula 9 — catenária × elipse</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="eqs">Uma equação por linha. O <code>=</code> é opcional — sem ele, a linha é lida como <code>f<sub>i</sub> = 0</code>.</label>
+          <textarea id="eqs" rows="5" spellcheck="false"></textarea>
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label>Funções: <code>sqrt exp ln log sin cos tan abs</code> · potência com <code>^</code> · constantes <code>pi</code> e <code>e</code></label>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" id="cardpf" hidden>
+      <h2>3. Forma de ponto fixo <span>x = g(x)</span></h2>
+      <div class="body">
+        <div class="field" style="margin-bottom:8px">
+          <label for="gs">Uma linha por incógnita, no formato <code>nome = expressão</code>.</label>
+          <textarea id="gs" rows="5" spellcheck="false"></textarea>
+        </div>
+        <p class="hint" style="margin:0">O isolamento não é único e decide se o método converge. Isolar a incógnita do termo de maior expoente (a raiz quarta, aqui) costuma ser o que dá <code>|∂g/∂x| &lt; 1</code>.</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>4. Incógnitas e chute inicial</h2>
+      <div class="body">
+        <table class="params">
+          <thead><tr><th>Nome</th><th>x₀</th><th></th></tr></thead>
+          <tbody id="unks"></tbody>
+        </table>
+        <div class="row" style="margin-top:10px">
+          <button class="tiny" id="addunk">Adicionar incógnita</button>
+          <button class="tiny" id="detect">Detectar nas equações</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>5. Parâmetros <span>valores fixos do processo</span></h2>
+      <div class="body">
+        <table class="params">
+          <thead><tr><th>Nome</th><th>Valor</th><th></th></tr></thead>
+          <tbody id="params"></tbody>
+        </table>
+        <div class="row" style="margin-top:10px">
+          <button class="tiny" id="addparam">Adicionar parâmetro</button>
+        </div>
+        <p class="hint">Símbolos que aparecem nas equações e não são incógnitas precisam estar aqui.</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>6. Critério de parada</h2>
+      <div class="body">
+        <div class="row field">
+          <div>
+            <label for="tol">Tolerância ε em max|Δx<sub>i</sub>|</label>
+            <input type="number" id="tol" value="1e-4" step="any" min="0">
+          </div>
+          <div>
+            <label for="maxit">Máx. de iterações</label>
+            <input type="number" id="maxit" value="100" min="1" step="1">
+          </div>
+        </div>
+        <label style="display:flex;gap:8px;align-items:flex-start;font-size:13.5px;color:var(--ink);margin:0">
+          <input type="checkbox" id="forcar" style="margin:3px 0 0;width:auto">
+          <span>ignorar a tolerância e rodar o número máximo de iterações<small style="display:block;color:var(--muted);font-size:12.5px">Use para o item da lista que pede exatamente 100 iterações de ponto fixo.</small></span>
+        </label>
+      </div>
+    </section>
+
+    <button class="primary" id="solve" style="width:100%">Resolver</button>
+  </div>
+
+  <!-- ================= COLUNA DIREITA ================= -->
+  <div>
+    <section class="card">
+      <h2>Solução <span id="solmeta"></span></h2>
+      <div class="body" id="out">
+        <p class="hint" style="margin:0">Clique em <b>Resolver</b> para rodar o método.</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Iterações <span id="itmeta"></span></h2>
+      <div class="body">
+        <div class="play">
+          <label for="kslider">iteração</label>
+          <input type="range" id="kslider" min="0" max="0" value="0" step="1">
+          <span class="hint" id="klabel" style="margin:0;min-width:70px"></span>
+          <span class="gap"></span>
+          <button class="tiny" id="csv">Baixar CSV</button>
+        </div>
+        <div class="live" id="live"></div>
+        <div class="scroll"><table class="it" id="tab"><thead></thead><tbody></tbody></table></div>
+        <div id="jac"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Trajetória das incógnitas <span>valor a cada iteração</span></h2>
+      <div class="body">
+        <div class="play">
+          <label><input type="checkbox" id="norm" style="width:auto"> normalizar por x<sub>final</sub></label>
+          <span class="gap"></span>
+          <label for="kmaxplot">mostrar até a iteração</label>
+          <input type="number" id="kmaxplot" min="1" step="1">
+        </div>
+        <div class="legend" id="legv"></div>
+        <canvas id="plotv"></canvas>
+        <p class="hint" id="vhint">Sem normalizar, incógnitas de ordens de grandeza diferentes achatam umas às outras — use a legenda para esconder séries ou ligue a normalização.</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Convergência <span id="cmeta">erro a cada iteração</span></h2>
+      <div class="body">
+        <div class="play">
+          <label for="erro">no eixo y</label>
+          <select id="erro" style="width:auto;font-size:12.5px;padding:5px 6px">
+            <option value="dx">max|Δx<sub>i</sub>| — passo da iteração</option>
+            <option value="f">‖F(x)‖∞ — resíduo das equações</option>
+          </select>
+        </div>
+        <canvas id="plotc"></canvas>
+        <p class="hint">Escala logarítmica. Newton-Raphson, perto da raiz, dobra o número de dígitos corretos a cada passo: a curva despenca. O ponto fixo cai por um fator constante — reta.</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Os dois métodos</h2>
+      <div class="body help">
+        <table class="cmp">
+          <thead><tr><th>Método</th><th>Precisa de</th><th>Converge sempre?</th><th>Ordem</th></tr></thead>
+          <tbody>
+            <tr><td><i style="background:var(--blue)"></i>Newton-Raphson</td><td>x₀ e o Jacobiano [Z]</td><td>não — depende do chute</td><td>2 (quadrática)</td></tr>
+            <tr><td><i style="background:var(--amber)"></i>Ponto fixo</td><td>x₀ e um rearranjo x = g(x)</td><td>não — depende do rearranjo</td><td>1 (linear)</td></tr>
+          </tbody>
+        </table>
+        <details open>
+          <summary>Newton-Raphson para n equações</summary>
+<pre class="algo"><b>1.</b> chute inicial X₀
+<b>2.</b> monte F(Xi) e o Jacobiano Z = ∂fk/∂xj em Xi
+<b>3.</b> resolva o sistema linear  Z·ΔX = −F(Xi)      (eliminação de Gauss)
+<b>4.</b> Xi+1 = Xi + ΔX
+<b>5.</b> repita até max|Δxj| ≤ ε</pre>
+          <p>É a forma <code>[Z]{X<sub>i+1</sub>} = −{F<sub>i</sub>} + [Z]{X<sub>i</sub>}</code> da aula, escrita em termos de ΔX. Cada iteração troca o sistema não-linear por um sistema linear — por isso a página de <a href="index.html">sistemas lineares</a> é pré-requisito desta.</p>
+          <p>Aqui as derivadas do Jacobiano são calculadas por diferença centrada, <code>(f(x+h) − f(x−h))/2h</code> com <code>h = 10⁻⁶·máx(1, |x|)</code>. O erro dessa aproximação fica na casa de 10⁻¹⁰ — irrelevante para a tolerância de 10⁻⁴ da lista, mas é o motivo de o resíduo final não zerar até o último bit.</p>
+        </details>
+        <details>
+          <summary>Ponto fixo (substituição progressiva)</summary>
+<pre class="algo"><b>1.</b> reescreva cada equação como  xj = gj(x₁,…,xn)
+<b>2.</b> avalie todas as gj com os valores da iteração anterior
+<b>3.</b> repita</pre>
+          <p>Condição suficiente de convergência, para duas equações: <code>|∂u/∂x| + |∂u/∂y| &lt; 1</code> e <code>|∂v/∂x| + |∂v/∂y| &lt; 1</code> nas funções já isoladas. É um critério restritivo, e um mesmo sistema pode divergir num rearranjo e convergir noutro — o exemplo da Aula 9 mostra exatamente isso.</p>
+        </details>
+      </div>
+    </section>
+  </div>
+
+</div>
+</main>
+
+<footer><div class="wrap">EN 242 — Modelagem de Processos em Engenharia · material de apoio das Aulas 9 a 11</div></footer>
+
+<script>
+"use strict";
+/*__CORE_START__*/
+/* =======================================================================
+   1. ANALISADOR DE EXPRESSÕES  (idêntico ao das outras páginas)
+   ======================================================================= */
+function tokenize(src){
+  const t=[]; let i=0;
+  const isDig=c=>c>='0'&&c<='9';
+  const isAl=c=>/[A-Za-z_]/.test(c);
+  while(i<src.length){
+    const c=src[i];
+    if(/\s/.test(c)){i++;continue;}
+    if(isDig(c)||(c==='.'&&isDig(src[i+1]||''))){
+      let j=i; while(j<src.length&&(isDig(src[j])||src[j]==='.'))j++;
+      if(src[j]==='e'||src[j]==='E'){
+        let k=j+1; if(src[k]==='+'||src[k]==='-')k++;
+        if(isDig(src[k]||'')){ while(k<src.length&&isDig(src[k]))k++; j=k; }
+      }
+      const v=parseFloat(src.slice(i,j));
+      if(!isFinite(v)) throw new Error('Número inválido em "'+src.slice(i,j)+'"');
+      t.push({t:'num',v}); i=j; continue;
+    }
+    if(isAl(c)){ let j=i; while(j<src.length&&/[A-Za-z0-9_]/.test(src[j]))j++; t.push({t:'id',v:src.slice(i,j)}); i=j; continue; }
+    if('+-*/^(),'.indexOf(c)>=0){ t.push({t:c}); i++; continue; }
+    throw new Error('Caractere não reconhecido: "'+c+'"');
+  }
+  return t;
+}
+
+function parse(src){
+  const tk=tokenize(src); let p=0;
+  const peek=()=>tk[p], eat=k=>{ if(!tk[p]||tk[p].t!==k) throw new Error('Esperado "'+k+'"'); return tk[p++]; };
+  function expr(){
+    let n=term();
+    while(peek()&&(peek().t==='+'||peek().t==='-')){ const op=tk[p++].t; n={k:'bin',op,a:n,b:term()}; }
+    return n;
+  }
+  function startsFactor(){ const q=peek(); return q&&(q.t==='num'||q.t==='id'||q.t==='('); }
+  function term(){
+    let n=unary();
+    for(;;){
+      const q=peek();
+      if(q&&(q.t==='*'||q.t==='/')){ const op=tk[p++].t; n={k:'bin',op,a:n,b:unary()}; }
+      else if(startsFactor()){ n={k:'bin',op:'*',a:n,b:unary()}; }
+      else return n;
+    }
+  }
+  function unary(){
+    const q=peek();
+    if(q&&(q.t==='-'||q.t==='+')){ p++; const n=unary(); return q.t==='-'?{k:'neg',a:n}:n; }
+    return power();
+  }
+  function power(){
+    const base=primary();
+    if(peek()&&peek().t==='^'){ p++; return {k:'bin',op:'^',a:base,b:unary()}; }
+    return base;
+  }
+  function primary(){
+    const q=peek();
+    if(!q) throw new Error('Expressão incompleta');
+    if(q.t==='num'){ p++; return {k:'num',v:q.v}; }
+    if(q.t==='('){ p++; const n=expr(); eat(')'); return n; }
+    if(q.t==='id'){
+      p++;
+      if(peek()&&peek().t==='('){
+        p++; const args=[];
+        if(peek()&&peek().t!==')'){ args.push(expr()); while(peek()&&peek().t===','){ p++; args.push(expr()); } }
+        eat(')');
+        return {k:'call',name:q.v,args};
+      }
+      return {k:'var',name:q.v};
+    }
+    throw new Error('Token inesperado');
+  }
+  const root=expr();
+  if(p<tk.length) throw new Error('Sobrou conteúdo depois da expressão');
+  return root;
+}
+
+const FN={
+  sin:Math.sin, cos:Math.cos, tan:Math.tan,
+  asin:Math.asin, acos:Math.acos, atan:Math.atan,
+  sinh:Math.sinh, cosh:Math.cosh, tanh:Math.tanh,
+  exp:Math.exp, ln:Math.log, log10:x=>Math.log10(x), log2:x=>Math.log2(x),
+  sqrt:Math.sqrt, raiz:Math.sqrt, abs:Math.abs, sign:Math.sign,
+  floor:Math.floor, ceil:Math.ceil, round:Math.round
+};
+
+function evalNode(n,sc){
+  switch(n.k){
+    case 'num': return n.v;
+    case 'neg': return -evalNode(n.a,sc);
+    case 'var':{
+      if(Object.prototype.hasOwnProperty.call(sc,n.name)) return sc[n.name];
+      if(n.name==='pi'||n.name==='PI') return Math.PI;
+      if(n.name==='e') return Math.E;
+      throw new Error('Símbolo desconhecido: "'+n.name+'". Declare como incógnita ou como parâmetro.');
+    }
+    case 'bin':{
+      const a=evalNode(n.a,sc), b=evalNode(n.b,sc);
+      switch(n.op){case '+':return a+b;case '-':return a-b;case '*':return a*b;case '/':return a/b;case '^':return Math.pow(a,b);}
+      throw new Error('Operador inválido');
+    }
+    case 'call':{
+      const nm=n.name;
+      const args=n.args.map(x=>evalNode(x,sc));
+      if(nm==='log') return args.length>1?Math.log(args[0])/Math.log(args[1]):Math.log10(args[0]);
+      if(nm==='pow') return Math.pow(args[0],args[1]);
+      if(nm==='min') return Math.min.apply(null,args);
+      if(nm==='max') return Math.max.apply(null,args);
+      if(FN[nm]) return FN[nm].apply(null,args);
+      throw new Error('Função desconhecida: "'+nm+'"');
+    }
+  }
+  throw new Error('Nó inválido');
+}
+
+function coletarVars(n,set){
+  if(!n) return set;
+  if(n.k==='var'){ if(n.name!=='pi'&&n.name!=='PI'&&n.name!=='e') set.add(n.name); }
+  else if(n.k==='neg') coletarVars(n.a,set);
+  else if(n.k==='bin'){ coletarVars(n.a,set); coletarVars(n.b,set); }
+  else if(n.k==='call') n.args.forEach(a=>coletarVars(a,set));
+  return set;
+}
+
+/* uma linha "lhs = rhs" vira o nó lhs - rhs; sem "=", a própria expressão */
+function parseEquacao(linha){
+  const p=linha.split('=');
+  if(p.length===1) return parse(p[0]);
+  if(p.length===2) return {k:'bin',op:'-',a:parse(p[0]),b:parse(p[1])};
+  throw new Error('Mais de um sinal de igual em "'+linha+'"');
+}
+function linhas(txt){
+  return txt.split('\n').map(s=>s.trim()).filter(s=>s.length&&s[0]!=='#');
+}
+
+/* =======================================================================
+   2. ÁLGEBRA LINEAR — Gauss com pivotamento parcial
+   ======================================================================= */
+function gauss(A,b){
+  const n=b.length;
+  const M=A.map((r,i)=>r.slice().concat([b[i]]));
+  for(let c=0;c<n;c++){
+    let piv=c;
+    for(let r=c+1;r<n;r++) if(Math.abs(M[r][c])>Math.abs(M[piv][c])) piv=r;
+    if(!isFinite(M[piv][c])||Math.abs(M[piv][c])<1e-300) throw new Error('Jacobiano singular na iteração — o método não consegue avançar a partir deste ponto.');
+    if(piv!==c){ const t=M[piv]; M[piv]=M[c]; M[c]=t; }
+    for(let r=c+1;r<n;r++){
+      const f=M[r][c]/M[c][c];
+      if(f===0) continue;
+      for(let k=c;k<=n;k++) M[r][k]-=f*M[c][k];
+    }
+  }
+  const x=new Array(n).fill(0);
+  for(let i=n-1;i>=0;i--){
+    let s=M[i][n];
+    for(let j=i+1;j<n;j++) s-=M[i][j]*x[j];
+    x[i]=s/M[i][i];
+  }
+  return x;
+}
+
+/* =======================================================================
+   3. MÉTODOS
+   ======================================================================= */
+function escopo(x,nomes,pars){
+  const s=Object.assign({},pars);
+  nomes.forEach((nm,i)=>{ s[nm]=x[i]; });
+  return s;
+}
+function avaliarF(nodes,x,nomes,pars){
+  const s=escopo(x,nomes,pars);
+  return nodes.map(n=>evalNode(n,s));
+}
+function jacobiano(nodes,x,nomes,pars){
+  const n=x.length, J=[];
+  for(let i=0;i<nodes.length;i++) J.push(new Array(n).fill(0));
+  for(let j=0;j<n;j++){
+    const h=1e-6*Math.max(1,Math.abs(x[j]));
+    const xp=x.slice(), xm=x.slice();
+    xp[j]+=h; xm[j]-=h;
+    const fp=avaliarF(nodes,xp,nomes,pars), fm=avaliarF(nodes,xm,nomes,pars);
+    for(let i=0;i<nodes.length;i++) J[i][j]=(fp[i]-fm[i])/(2*h);
+  }
+  return J;
+}
+const normInf=v=>v.reduce((m,z)=>Math.max(m,Math.abs(z)),0);
+const finito=v=>v.every(z=>isFinite(z));
+
+function newton(nodes,nomes,pars,x0,opt){
+  const its=[]; let x=x0.slice();
+  let F=avaliarF(nodes,x,nomes,pars);
+  its.push({k:0,x:x.slice(),dx:null,nf:normInf(F),F:F.slice(),J:null});
+  let aviso=null,ok=false;
+  for(let k=1;k<=opt.maxit;k++){
+    const J=jacobiano(nodes,x,nomes,pars);
+    F=avaliarF(nodes,x,nomes,pars);
+    if(!finito(F)||!J.every(finito)){ aviso='Valor não-finito na iteração '+k+' — o método saiu do domínio das funções (raiz de negativo, divisão por zero ou divergência).'; break; }
+    let dx;
+    try{ dx=gauss(J,F.map(v=>-v)); }
+    catch(e){ aviso=e.message; break; }
+    if(!finito(dx)){ aviso='Passo não-finito na iteração '+k+'.'; break; }
+    x=x.map((v,i)=>v+dx[i]);
+    const Fn=avaliarF(nodes,x,nomes,pars);
+    its.push({k,x:x.slice(),dx:normInf(dx),nf:normInf(Fn),F:Fn.slice(),J});
+    if(!opt.forcar&&normInf(dx)<=opt.tol){ ok=true; break; }
+    if(!finito(x)){ aviso='Divergiu na iteração '+k+'.'; break; }
+  }
+  if(!ok&&!aviso&&!opt.forcar) aviso='Parou no limite de '+opt.maxit+' iterações sem atingir a tolerância.';
+  return {its,ok,aviso};
+}
+
+function pontofixo(gnodes,nomes,pars,x0,opt){
+  const its=[]; let x=x0.slice();
+  its.push({k:0,x:x.slice(),dx:null,nf:null});
+  let aviso=null,ok=false;
+  for(let k=1;k<=opt.maxit;k++){
+    const novo=x.slice();
+    if(opt.modo==='seidel'){
+      for(let i=0;i<nomes.length;i++){
+        const s=escopo(novo,nomes,pars);
+        novo[i]=evalNode(gnodes[i],s);
+      }
+    }else{
+      const s=escopo(x,nomes,pars);
+      for(let i=0;i<nomes.length;i++) novo[i]=evalNode(gnodes[i],s);
+    }
+    if(!finito(novo)){
+      aviso='Valor não-finito na iteração '+k+' — tipicamente uma raiz de número negativo. Este rearranjo não serve a partir deste ponto (tente o modo simultâneo ou outro isolamento).';
+      break;
+    }
+    const dx=normInf(novo.map((v,i)=>v-x[i]));
+    x=novo;
+    its.push({k,x:x.slice(),dx,nf:null});
+    if(!opt.forcar&&dx<=opt.tol){ ok=true; break; }
+  }
+  if(!ok&&!aviso&&!opt.forcar) aviso='Parou no limite de '+opt.maxit+' iterações sem atingir a tolerância.';
+  return {its,ok,aviso};
+}
+
+/* =======================================================================
+   4. EXEMPLOS
+   ======================================================================= */
+const PRESETS=[
+  {
+    nome:'Lista 1 · Ex. 1 — cano de vapor',
+    meta:'1 equação, 1 incógnita',
+    eqs:'h*pi*d*L*(Ts - Tar) + eps*sigma*pi*d*L*(Ts^4 - Tar^4) = Q',
+    gs:'Ts = ((Q - h*pi*d*L*(Ts - Tar))/(eps*sigma*pi*d*L) + Tar^4)^0.25',
+    maxit:100,
+    unks:[['Ts',400]],
+    pars:[['Q',19000],['L',25],['d',0.1],['eps',0.8],['sigma',5.67e-8],['h',10],['Tar',298.15]]
+  },
+  {
+    nome:'Lista 1 · Ex. 2 — painel e aquecedor',
+    meta:'4 equações, 4 incógnitas',
+    eqs:'5.67e-8*Tc^4 + 17.41*Tc - Jc = 5188.18\nJc - 0.71*Jh + 7.46*Tc = 2352.71\n5.67e-8*Th^4 + 1.865*Th - Jh = 2250\nJh - 0.71*Jc + 7.46*Th = 11093',
+    gs:'Tc = ((5188.18 + Jc - 17.41*Tc)/5.67e-8)^0.25\nJc = 2352.71 + 0.71*Jh - 7.46*Tc\nTh = ((2250 + Jh - 1.865*Th)/5.67e-8)^0.25\nJh = 11093 + 0.71*Jc - 7.46*Th',
+    maxit:100,
+    unks:[['Tc',298],['Jc',3000],['Th',298],['Jh',5000]],
+    pars:[]
+  },
+  {
+    nome:'Aula 9 — sistema do Chapra',
+    meta:'2 equações, raízes x=2 e y=3',
+    eqs:'x^2 + x*y = 10\ny + 3*x*y^2 = 57',
+    gs:'x = sqrt(10 - x*y)\ny = sqrt((57 - y)/(3*x))',
+    modo:'seidel',
+    maxit:60,
+    unks:[['x',1.5],['y',3.5]],
+    pars:[]
+  },
+  {
+    nome:'Aula 9 — catenária × elipse',
+    meta:'interseção das duas curvas',
+    eqs:'y = 0.5*(exp(x/2) + exp(-x/2))\n9*x^2 + 25*y^2 = 225',
+    gs:'x = 2*ln(y + sqrt(y^2 - 1))\ny = sqrt((225 - 9*x^2)/25)',
+    maxit:100,
+    unks:[['x',3],['y',2.4]],
+    pars:[]
+  }
+];
+/*__CORE_END__*/
+
+/* =======================================================================
+   5. INTERFACE
+   ======================================================================= */
+const $=s=>document.querySelector(s);
+const METHODS=[
+  {id:'nr',  nome:'Newton-Raphson',  cor:'#2f5fd0', desc:'Lineariza o sistema a cada passo: resolve Z·ΔX = −F por eliminação de Gauss. Convergência quadrática, mas precisa do Jacobiano.'},
+  {id:'pf',  nome:'Ponto fixo (substituição progressiva)', cor:'#c07600', desc:'Reescreve cada equação como xj = gj(x) e itera. Simples, sem derivadas — e sensível ao rearranjo escolhido.'}
+];
+const CORES=['#2f5fd0','#c07600','#0f766e','#8b2fa0','#b02a1e','#1f3f92'];
+
+let method='nr';
+let unks=[], pars=[];
+let last=null, sel=0, oculto={};
+
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function fmt(v,d){
+  if(v===null||v===undefined||!isFinite(v)) return '—';
+  const a=Math.abs(v);
+  if(a!==0&&(a<1e-4||a>=1e7)) return v.toExponential(d===undefined?4:d);
+  return v.toFixed(d===undefined?6:d);
+}
+
+function renderMethods(){
+  $('#methods').innerHTML=METHODS.map(m=>
+    '<label class="'+(m.id===method?'on':'')+'"><input type="radio" name="met" value="'+m.id+'"'+(m.id===method?' checked':'')+'>'+
+    '<span><b>'+m.nome+'</b><small>'+m.desc+'</small></span></label>').join('');
+  $('#methods').querySelectorAll('input').forEach(r=>r.addEventListener('change',()=>{
+    method=r.value; renderMethods(); ajustar();
+  }));
+}
+function ajustar(){
+  const pf=method==='pf';
+  $('#cardpf').hidden=!pf;
+  $('#subpf').hidden=!pf;
+  $('#cmeta').textContent=pf?'passo a cada iteração':'erro a cada iteração';
+  $('#erro').parentElement.style.display=pf?'none':'';
+}
+function modoPF(){ const r=document.querySelector('input[name=modo]:checked'); return r?r.value:'jacobi'; }
+
+function linhaVar(lista,i,render){
+  const it=lista[i];
+  return '<tr>'+
+    '<td class="nm"><input type="text" value="'+esc(it.name)+'" data-i="'+i+'" data-f="name" spellcheck="false"></td>'+
+    '<td><input type="number" value="'+it.value+'" step="any" data-i="'+i+'" data-f="value"></td>'+
+    '<td class="del"><button type="button" data-i="'+i+'" data-f="del" title="remover">×</button></td></tr>';
+}
+function bind(tbody,lista,render){
+  tbody.querySelectorAll('input,button').forEach(el=>{
+    const i=+el.dataset.i, f=el.dataset.f;
+    if(f==='del'){ el.addEventListener('click',()=>{ lista.splice(i,1); render(); }); return; }
+    el.addEventListener('input',()=>{ lista[i][f]= f==='value' ? parseFloat(el.value) : el.value.trim(); });
+  });
+}
+function renderUnks(){
+  $('#unks').innerHTML=unks.map((u,i)=>linhaVar(unks,i)).join('')||'<tr><td colspan="3" class="hint">Nenhuma incógnita — use “Detectar nas equações”.</td></tr>';
+  bind($('#unks'),unks,renderUnks);
+}
+function renderParams(){
+  $('#params').innerHTML=pars.map((p,i)=>linhaVar(pars,i)).join('')||'<tr><td colspan="3" class="hint">Nenhum parâmetro.</td></tr>';
+  bind($('#params'),pars,renderParams);
+}
+
+function aplicarPreset(idx){
+  const p=PRESETS[idx];
+  $('#eqs').value=p.eqs;
+  $('#gs').value=p.gs;
+  unks=p.unks.map(([name,value])=>({name,value}));
+  pars=p.pars.map(([name,value])=>({name,value}));
+  $('#sysmeta').textContent=p.meta;
+  renderUnks(); renderParams();
+  oculto={}; last=null; sel=0;
+  $('#out').innerHTML='<p class="hint" style="margin:0">Clique em <b>Resolver</b> para rodar o método.</p>';
+  $('#tab').querySelector('thead').innerHTML=''; $('#tab').querySelector('tbody').innerHTML='';
+  $('#jac').innerHTML=''; $('#live').innerHTML=''; $('#legv').innerHTML='';
+  $('#tol').value = idx===1 ? '1e-4' : '1e-6';
+  $('#maxit').value = p.maxit||100;
+  const modo=p.modo||'jacobi';
+  const rb=document.querySelector('input[name=modo][value="'+modo+'"]');
+  if(rb) rb.checked=true;
+  desenhar();
+}
+
+function detectar(){
+  let nodes;
+  try{ nodes=linhas($('#eqs').value).map(parseEquacao); }
+  catch(e){ $('#out').innerHTML='<div class="msg err">'+esc(e.message)+'</div>'; return; }
+  const set=new Set(); nodes.forEach(n=>coletarVars(n,set));
+  const conhecidos=new Set(pars.map(p=>p.name));
+  const atuais=new Set(unks.map(u=>u.name));
+  set.forEach(nm=>{ if(!conhecidos.has(nm)&&!atuais.has(nm)) unks.push({name:nm,value:1}); });
+  renderUnks();
+}
+
+function coletarOpts(){
+  return {
+    tol:Math.abs(parseFloat($('#tol').value))||0,
+    maxit:Math.max(1,Math.round(+$('#maxit').value||1)),
+    forcar:$('#forcar').checked,
+    modo:modoPF()
+  };
+}
+
+function resolver(){
+  let nodes,gnodes=null;
+  const nomes=unks.map(u=>u.name).filter(Boolean);
+  const parsObj={}; pars.forEach(p=>{ if(p.name) parsObj[p.name]=p.value; });
+  const x0=unks.map(u=>Number(u.value));
+  try{
+    const ls=linhas($('#eqs').value);
+    if(!ls.length) throw new Error('Escreva ao menos uma equação.');
+    nodes=ls.map(parseEquacao);
+    if(!nomes.length) throw new Error('Declare as incógnitas (ou use “Detectar nas equações”).');
+    if(new Set(nomes).size!==nomes.length) throw new Error('Há nomes de incógnita repetidos.');
+    if(method==='nr'&&nodes.length!==nomes.length)
+      throw new Error('São '+nodes.length+' equação(ões) para '+nomes.length+' incógnita(s). Newton-Raphson exige um Jacobiano quadrado.');
+    if(!x0.every(isFinite)) throw new Error('Há chute inicial vazio ou inválido.');
+    if(method==='pf'){
+      const gl=linhas($('#gs').value);
+      if(gl.length!==nomes.length) throw new Error('A forma de ponto fixo precisa de exatamente uma linha por incógnita ('+nomes.length+').');
+      const mapa={};
+      gl.forEach(l=>{
+        const p=l.split('=');
+        if(p.length!==2) throw new Error('Linha sem "=" na forma de ponto fixo: "'+l+'"');
+        const nm=p[0].trim();
+        if(nomes.indexOf(nm)<0) throw new Error('"'+nm+'" não está na lista de incógnitas.');
+        mapa[nm]=parse(p[1]);
+      });
+      gnodes=nomes.map(nm=>{ if(!mapa[nm]) throw new Error('Falta isolar "'+nm+'".'); return mapa[nm]; });
+    }
+    // teste de avaliação no chute inicial
+    avaliarF(nodes,x0,nomes,parsObj);
+  }catch(e){
+    last=null;
+    $('#out').innerHTML='<div class="msg err">'+esc(e.message)+'</div>';
+    $('#tab').querySelector('thead').innerHTML=''; $('#tab').querySelector('tbody').innerHTML='';
+    $('#jac').innerHTML=''; $('#live').innerHTML=''; $('#legv').innerHTML='';
+    desenhar(); return;
+  }
+  const opt=coletarOpts();
+  let r;
+  try{
+    r = method==='nr' ? newton(nodes,nomes,parsObj,x0,opt) : pontofixo(gnodes,nomes,parsObj,x0,opt);
+  }catch(e){
+    $('#out').innerHTML='<div class="msg err">'+esc(e.message)+'</div>'; return;
+  }
+  // resíduo final sempre nas equações originais
+  const ult=r.its[r.its.length-1];
+  let Ffim=null;
+  try{ Ffim=avaliarF(nodes,ult.x,nomes,parsObj); }catch(e){}
+  last={r,nomes,nodes,pars:parsObj,Ffim,metodo:method,modo:opt.modo};
+  sel=r.its.length-1;
+  $('#kmaxplot').max=r.its[r.its.length-1].k;
+  $('#kmaxplot').value=r.its[r.its.length-1].k;
+  render();
+}
+
+function render(){
+  const {r,nomes,Ffim}=last;
+  const ult=r.its[r.its.length-1];
+  let html='';
+  if(r.aviso) html+='<div class="msg warn">'+esc(r.aviso)+'</div>';
+  else if(r.ok) html+='<div class="msg ok">Convergiu em '+ult.k+' iteração(ões), com max|Δx| ≤ '+$('#tol').value+'.</div>';
+  else html+='<div class="msg ok">'+ult.k+' iterações concluídas.</div>';
+  html+='<div class="sol">'+nomes.map((nm,i)=>'<div><b>'+esc(nm)+'</b><span>'+fmt(ult.x[i],6)+'</span></div>').join('')+'</div>';
+  if(Ffim) html+='<p class="hint">Resíduo nas equações originais: ‖F‖∞ = '+fmt(normInf(Ffim),3)+
+    ' · '+Ffim.map((v,i)=>'f'+(i+1)+' = '+fmt(v,3)).join(' · ')+'</p>';
+  $('#out').innerHTML=html;
+  $('#solmeta').textContent=(last.metodo==='nr'?'Newton-Raphson':'ponto fixo · '+(last.modo==='seidel'?'sucessivo':'simultâneo'));
+  $('#itmeta').textContent=ult.k+' iterações';
+
+  const th='<tr><th>k</th>'+nomes.map(n=>'<th>'+esc(n)+'</th>').join('')+
+    '<th>max|Δx|</th>'+(last.metodo==='nr'?'<th>‖F‖∞</th>':'')+'</tr>';
+  const tb=r.its.map((it,idx)=>'<tr data-k="'+idx+'" class="'+(idx===sel?'sel':'')+'"><td>'+it.k+'</td>'+
+    it.x.map(v=>'<td>'+fmt(v,6)+'</td>').join('')+
+    '<td>'+(it.dx===null?'—':fmt(it.dx,3))+'</td>'+
+    (last.metodo==='nr'?'<td>'+(it.nf===null?'—':fmt(it.nf,3))+'</td>':'')+'</tr>').join('');
+  $('#tab').querySelector('thead').innerHTML=th;
+  $('#tab').querySelector('tbody').innerHTML=tb;
+  $('#tab').querySelectorAll('tbody tr').forEach(tr=>tr.addEventListener('click',()=>{
+    sel=+tr.dataset.k; $('#kslider').value=sel; render();
+  }));
+
+  const ks=$('#kslider'); ks.max=r.its.length-1; ks.value=sel;
+  $('#klabel').textContent='k = '+r.its[sel].k;
+  $('#live').innerHTML=nomes.map((nm,i)=>'<div><b>'+esc(nm)+'</b> = '+fmt(r.its[sel].x[i],6)+'</div>').join('');
+
+  const J=r.its[sel].J;
+  if(J){
+    $('#jac').innerHTML='<details open><summary>Jacobiano usado na iteração k = '+r.its[sel].k+'</summary>'+
+      '<table class="mat"><thead><tr><th>∂f/∂</th>'+nomes.map(n=>'<th>'+esc(n)+'</th>').join('')+'<th>−f</th></tr></thead><tbody>'+
+      J.map((row,i)=>'<tr><td>f'+(i+1)+'</td>'+row.map(v=>'<td>'+fmt(v,4)+'</td>').join('')+
+        '<td>—</td></tr>').join('')+
+      '</tbody></table><p class="hint">Cada iteração resolve Z·ΔX = −F com esta matriz.</p></details>';
+    // coluna −f: usa F da iteração anterior (ponto onde J foi avaliado)
+    const prev=r.its[sel-1];
+    if(prev){
+      const tds=$('#jac').querySelectorAll('tbody tr');
+      tds.forEach((tr,i)=>{ tr.lastElementChild.textContent=fmt(-prev.F[i],4); });
+    }
+  }else $('#jac').innerHTML='';
+
+  renderLegenda();
+  desenhar();
+}
+
+function renderLegenda(){
+  if(!last){ $('#legv').innerHTML=''; return; }
+  $('#legv').innerHTML=last.nomes.map((nm,i)=>
+    '<button data-i="'+i+'" class="'+(oculto[i]?'off':'')+'"><i style="background:'+CORES[i%CORES.length]+'"></i>'+esc(nm)+'</button>').join('');
+  $('#legv').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+    const i=+b.dataset.i; oculto[i]=!oculto[i]; renderLegenda(); desenhar();
+  }));
+}
+
+/* =======================================================================
+   6. GRÁFICOS
+   ======================================================================= */
+const MARG={L:70,R:16,T:14,B:34};
+function niceStep(r){
+  const e=Math.pow(10,Math.floor(Math.log10(Math.abs(r)||1))), f=r/e;
+  return (f<1.5?1:f<3?2:f<7?5:10)*e;
+}
+function ticks(a,b,n){ const st=niceStep((b-a)/n), out=[]; for(let v=Math.ceil(a/st)*st; v<=b+1e-9; v+=st) out.push(v); return out; }
+function prep(cv){
+  const ctx=cv.getContext('2d'), dpr=window.devicePixelRatio||1;
+  const W=cv.clientWidth, H=cv.clientHeight;
+  cv.width=W*dpr; cv.height=H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H);
+  return {ctx,W,H,w:W-MARG.L-MARG.R,h:H-MARG.T-MARG.B,fonte:getComputedStyle(document.body).fontFamily};
+}
+function vazio(g,txt){
+  g.ctx.fillStyle='#8896a5'; g.ctx.font='13px '+g.fonte; g.ctx.textAlign='center'; g.ctx.textBaseline='middle';
+  g.ctx.fillText(txt,g.W/2,g.H/2);
+}
+function sup(n){
+  const mapa={'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+  return String(n).split('').map(c=>mapa[c]||c).join('');
+}
+function eixos(g,kmax,py,rotY,rotulos){
+  const {ctx,w,h,fonte}=g, {L,T}=MARG;
+  ctx.font='11px '+fonte;
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  const passo=Math.max(1,Math.ceil(kmax/10));
+  for(let k=0;k<=kmax;k+=passo){
+    const x=px(k,kmax,w);
+    ctx.strokeStyle='#eff3f7'; ctx.beginPath(); ctx.moveTo(x,T); ctx.lineTo(x,T+h); ctx.stroke();
+    ctx.fillStyle='#7b8794'; ctx.fillText(String(k),x,T+h+7);
+  }
+  ctx.strokeStyle='#aab6c2'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(L,T); ctx.lineTo(L,T+h); ctx.lineTo(L+w,T+h); ctx.stroke();
+  ctx.fillStyle='#5d6b7b'; ctx.textAlign='right'; ctx.textBaseline='bottom';
+  ctx.fillText('iterações',L+w,g.H-2);
+  ctx.save(); ctx.translate(15,T+h/2); ctx.rotate(-Math.PI/2);
+  ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(rotY,0,0); ctx.restore();
+}
+function px(k,kmax,w){ return MARG.L+(kmax<=0?0.5:k/kmax)*w; }
+
+function desenhar(){ desenharValores(); desenharConv(); }
+
+function desenharValores(){
+  const g=prep($('#plotv'));
+  if(!last||last.r.its.length<1){ vazio(g,'Resolva o sistema para ver a trajetória.'); return; }
+  const {ctx,w,h,fonte}=g, {L,T}=MARG;
+  const its=last.r.its, nomes=last.nomes;
+  const kcap=Math.min(its[its.length-1].k, Math.max(1,Math.round(+$('#kmaxplot').value||its[its.length-1].k)));
+  const dados=its.filter(it=>it.k<=kcap);
+  const normalizar=$('#norm').checked;
+  const xf=its[its.length-1].x;
+
+  const series=[];
+  nomes.forEach((nm,i)=>{
+    if(oculto[i]) return;
+    const den = normalizar && isFinite(xf[i]) && Math.abs(xf[i])>1e-300 ? xf[i] : 1;
+    const pts=dados.map(it=>({k:it.k,v:it.x[i]/den})).filter(p=>isFinite(p.v));
+    if(pts.length) series.push({nm,cor:CORES[i%CORES.length],pts});
+  });
+  if(!series.length){ vazio(g,'Nenhuma série visível — ligue alguma na legenda.'); return; }
+
+  let lo=Infinity,hi=-Infinity,kmax=0;
+  series.forEach(s=>s.pts.forEach(p=>{ lo=Math.min(lo,p.v); hi=Math.max(hi,p.v); kmax=Math.max(kmax,p.k); }));
+  if(hi-lo<1e-12){ const d=Math.max(1e-9,Math.abs(hi)*0.05); lo-=d; hi+=d; }
+  const pad=(hi-lo)*0.08; lo-=pad; hi+=pad;
+  const py=v=>T+h-((v-lo)/(hi-lo))*h;
+
+  ctx.font='11px '+fonte;
+  ticks(lo,hi,6).forEach(v=>{
+    const y=py(v);
+    ctx.strokeStyle='#e6ebf1'; ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(L+w,y); ctx.stroke();
+    ctx.fillStyle='#7b8794'; ctx.textAlign='right'; ctx.textBaseline='middle';
+    ctx.fillText(fmt(v,Math.abs(v)<10?3:1),L-7,y);
+  });
+  eixos(g,kmax,py,normalizar?'x / x_final':'valor');
+
+  series.forEach(s=>{
+    ctx.strokeStyle=s.cor; ctx.lineWidth=2; ctx.lineJoin='round';
+    ctx.beginPath();
+    s.pts.forEach((p,i)=>{ const X=px(p.k,kmax,w),Y=py(p.v); i?ctx.lineTo(X,Y):ctx.moveTo(X,Y); });
+    ctx.stroke();
+    if(s.pts.length<=40){
+      ctx.fillStyle=s.cor;
+      s.pts.forEach(p=>{ ctx.beginPath(); ctx.arc(px(p.k,kmax,w),py(p.v),2.6,0,6.284); ctx.fill(); });
+    }
+  });
+  // marcador da iteração selecionada
+  const ksel=last.r.its[sel].k;
+  if(ksel<=kmax){
+    const X=px(ksel,kmax,w);
+    ctx.strokeStyle='#b02a1e'; ctx.setLineDash([4,3]); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(X,T); ctx.lineTo(X,T+h); ctx.stroke(); ctx.setLineDash([]);
+  }
+}
+
+function desenharConv(){
+  const g=prep($('#plotc'));
+  if(!last){ vazio(g,'Sem dados de convergência.'); return; }
+  const {ctx,w,h,fonte}=g, {L,T}=MARG;
+  const campo = last.metodo==='nr' ? $('#erro').value : 'dx';
+  const pts=[];
+  last.r.its.forEach(it=>{
+    const v = campo==='dx' ? it.dx : it.nf;
+    if(v!==null&&isFinite(v)&&v>0&&it.k>=1) pts.push({k:it.k,e:v});
+  });
+  if(!pts.length){ vazio(g,'Nada a traçar em escala log — o erro já era zero.'); return; }
+
+  let kmax=1,lo=Infinity,hi=-Infinity;
+  pts.forEach(p=>{ kmax=Math.max(kmax,p.k); lo=Math.min(lo,p.e); hi=Math.max(hi,p.e); });
+  let e0=Math.floor(Math.log10(lo)), e1=Math.ceil(Math.log10(hi));
+  if(e1-e0<1) e1=e0+1;
+  if(e1-e0>16) e0=e1-16;
+  const py=e=>{ const t=(Math.log10(e)-e0)/(e1-e0); return T+h-Math.max(0,Math.min(1,t))*h; };
+
+  ctx.font='11px '+fonte;
+  for(let e=e0;e<=e1;e++){
+    const y=py(Math.pow(10,e));
+    ctx.strokeStyle='#e6ebf1'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(L+w,y); ctx.stroke();
+    ctx.fillStyle='#7b8794'; ctx.textAlign='right'; ctx.textBaseline='middle';
+    ctx.fillText('10'+sup(e),L-7,y);
+  }
+  eixos(g,kmax,py,campo==='dx'?'max|Δx|':'‖F‖∞');
+
+  // linha da tolerância
+  const tol=Math.abs(parseFloat($('#tol').value));
+  if(isFinite(tol)&&tol>0&&Math.log10(tol)>=e0&&Math.log10(tol)<=e1){
+    const y=py(tol);
+    ctx.strokeStyle='#b02a1e'; ctx.setLineDash([5,4]); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(L+w,y); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='#b02a1e'; ctx.textAlign='left'; ctx.textBaseline='bottom';
+    ctx.fillText('ε',L+3,y-2);
+  }
+
+  const cor=last.metodo==='nr'?'#2f5fd0':'#c07600';
+  ctx.strokeStyle=cor; ctx.lineWidth=2; ctx.lineJoin='round';
+  ctx.beginPath();
+  pts.forEach((p,i)=>{ const X=px(p.k,kmax,w),Y=py(p.e); i?ctx.lineTo(X,Y):ctx.moveTo(X,Y); });
+  ctx.stroke();
+  if(pts.length<=40){
+    ctx.fillStyle=cor;
+    pts.forEach(p=>{ ctx.beginPath(); ctx.arc(px(p.k,kmax,w),py(p.e),2.6,0,6.284); ctx.fill(); });
+  }
+}
+
+/* =======================================================================
+   7. CSV e eventos
+   ======================================================================= */
+function baixarCSV(){
+  if(!last) return;
+  const {r,nomes}=last;
+  const head=['k'].concat(nomes).concat(['max_dx']).concat(last.metodo==='nr'?['normF']:[]);
+  const linhasCsv=[head.join(';')].concat(r.its.map(it=>{
+    const c=[it.k].concat(it.x.map(v=>String(v).replace('.',','))); 
+    c.push(it.dx===null?'':String(it.dx).replace('.',','));
+    if(last.metodo==='nr') c.push(it.nf===null?'':String(it.nf).replace('.',','));
+    return c.join(';');
+  }));
+  const blob=new Blob(['\ufeff'+linhasCsv.join('\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='iteracoes-'+(last.metodo==='nr'?'newton':'pontofixo')+'.csv';
+  a.click(); URL.revokeObjectURL(a.href);
+}
+
+$('#preset').addEventListener('change',()=>aplicarPreset(+$('#preset').value));
+$('#solve').addEventListener('click',resolver);
+$('#detect').addEventListener('click',detectar);
+$('#addunk').addEventListener('click',()=>{ unks.push({name:'',value:1}); renderUnks(); });
+$('#addparam').addEventListener('click',()=>{ pars.push({name:'',value:0}); renderParams(); });
+$('#kslider').addEventListener('input',e=>{ if(!last) return; sel=+e.target.value; render(); });
+$('#norm').addEventListener('change',desenharValores);
+$('#kmaxplot').addEventListener('input',desenharValores);
+$('#erro').addEventListener('change',desenharConv);
+$('#csv').addEventListener('click',baixarCSV);
+document.querySelectorAll('input[name=modo]').forEach(r=>r.addEventListener('change',()=>{}));
+window.addEventListener('resize',desenhar);
+
+renderMethods();
+ajustar();
+aplicarPreset(0);
+</script>
+</body>
+</html>
